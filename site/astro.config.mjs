@@ -22,20 +22,15 @@ export default defineConfig({
 				{
 					label: 'Notes de cours',
 					items: [
-						{
-							label: 'Semaine 1',
-							collapsed: true,
-							items: [
-								{ label: 'Introduction', slug: 'cours/01-introduction' }
-							]
-						},
+						// { label: 'Introduction', slug: 'cours/01-introduction' },
+						{ label: 'Fichiers', slug: 'cours/03-fichiers' }
 					]
 				},
 				{
-					label: 'Guides',
+					label: 'Activités',
 					items: [
-						// Each item here is one entry in the navigation menu.
-						{ label: 'Example Guide', slug: 'guides/example' },
+						{ label: 'Linux et ligne de commande', slug: 'activites/01-terminal' },
+						{ label: 'Fichiers et logs', slug: 'activites/02-fichiers-et-logs' }
 					],
 				},
 				{

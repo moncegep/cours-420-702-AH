@@ -1,0 +1,305 @@
+---
+title: "Activité 1 : Prise en main de Linux et de la ligne de commande"
+description: "Découvrir les commandes de base du terminal Linux : navigation, création de fichiers et dossiers, chemins relatifs et absolus."
+---
+
+import { Tabs, TabItem, Aside, Steps, Card, CardGrid } from '@astrojs/starlight/components';
+
+## Contexte
+
+Dans cette activité, tu vas découvrir les actions de base en ligne de commande dans un environnement Linux. 
+L'objectif est de te rendre plus à l'aise avec le terminal, la navigation dans les dossiers, la manipulation de fichiers et l'observation de l'arborescence d'un projet.
+
+L'activité se fait dans **LabEx**.
+
+## Objectifs d'apprentissage
+
+À la fin de cette activité, tu devrais être capable de :
+
+- reconnaître les principaux éléments de l'environnement Linux ;
+- utiliser le terminal pour exécuter des commandes simples ;
+- afficher du texte avec `echo` et écrire du contenu dans un fichier avec la redirection `>` ;
+- créer, organiser et supprimer des fichiers et des dossiers ;
+- utiliser différentes formes de `ls` pour explorer le contenu d'un répertoire ;
+- te déplacer dans l'arborescence avec des chemins relatifs et absolus ;
+- faire le lien entre ces manipulations et l'organisation d'un projet de développement web.
+
+## Rappel rapide : environnement Linux
+
+Un système Linux organise les fichiers dans une **arborescence** de dossiers. 
+Tout part d'une racine appelée `/`.
+
+| Symbole | Signification |
+|---------|---------------|
+| `/`     | La racine du système |
+| `~`     | Ton dossier personnel |
+| `.`     | Le dossier courant |
+| `..`    | Le dossier parent |
+
+Dans le terminal, tu tapes une commande, tu appuies sur Entrée, et le système exécute l'action demandée.
+
+## Commandes à connaître
+
+### `echo`
+
+Affiche du texte dans le terminal.
+
+```bash
+echo Bonjour
+echo "Bienvenue dans Linux"
+```
+
+Combiné avec `>`, `echo` peut aussi écrire du contenu dans un fichier :
+
+```bash
+echo "<h1>Bonjour</h1>" > index.html
+```
+
+### `cat`
+
+Affiche le contenu d'un fichier dans le terminal.
+
+```bash
+cat index.html
+```
+
+### `ls`
+
+Affiche le contenu d'un dossier.
+
+```bash
+ls          # contenu simple
+ls -l       # vue détaillée (permissions, taille, date)
+ls -a       # inclut les fichiers cachés
+ls -la      # vue détaillée complète
+ls dossier  # contenu d'un dossier spécifique
+```
+
+### Création de dossiers et fichiers
+
+```bash
+mkdir nom_du_dossier       # créer un dossier
+mkdir css js images        # créer plusieurs dossiers
+touch index.html           # créer un fichier vide
+touch css/style.css        # créer un fichier dans un sous-dossier
+```
+
+### Suppression
+
+```bash
+rm fichier.txt      # supprimer un fichier
+rmdir dossier       # supprimer un dossier vide
+rm -r dossier       # supprimer un dossier et tout son contenu
+```
+
+<Aside type="caution" title="Suppression irréversible">
+  La suppression en ligne de commande est immédiate. Il n'y a pas de corbeille.
+</Aside>
+
+### Navigation
+
+```bash
+pwd                  # afficher le dossier courant
+cd nom_du_dossier    # entrer dans un dossier
+cd ..                # remonter au dossier parent
+cd ~                 # retourner au dossier personnel
+cd /                 # aller à la racine
+```
+
+### Chemins relatifs et absolus
+
+Un **chemin relatif** est exprimé par rapport au dossier courant :
+
+```bash
+cd css            # entrer dans le sous-dossier css
+cd ../js          # remonter d'un niveau, puis entrer dans js
+```
+
+Un **chemin absolu** commence toujours par `/` et décrit le chemin complet depuis la racine :
+
+```bash
+cd /home/labex/mon-site/js
+```
+
+Le chemin relatif est plus court quand tu travailles déjà dans le bon dossier. Le chemin absolu fonctionne peu importe où tu te trouves.
+
+<Aside type="tip" title="Particularités Windows">
+  Sur Windows, un **chemin absolu ne commence généralement pas par `/`**, 
+  mais par une **lettre de lecteur (drive letter)** suivie de `:\`.
+  
+  ```
+  C:\Users\Alex\Documents\fichier.txt
+  D:\Projets\web\index.html
+  ```
+
+  Il existe aussi des chemins absolus réseau :
+  ```
+  \\Serveur\Dossier\Fichier.txt
+  ```
+  
+  On appelle ça un **chemin UNC** — il est aussi absolu car il décrit un emplacement complet.
+</Aside>
+
+---
+
+## Partie 1 : Découvrir l'environnement et les commandes de base
+
+### 1 Explorer son environnement
+
+Ouvre ton environnement LabEx et repère la zone du terminal et ton dossier de travail.
+
+Exécute :
+
+```bash
+pwd
+ls
+ls -a
+```
+
+<Aside type="note" title="Questions">
+  1. En te basant sur le résultat de `pwd`, dans quel dossier es-tu ? Écris le chemin complet.
+  2. Compare les résultats de `ls` et `ls -a`. Quels éléments supplémentaires apparaissent ? Quel point commun ont-ils dans leur nom ?
+</Aside>
+
+### 2 Écrire du texte et créer du contenu
+
+Exécute les commandes suivantes et observe la différence :
+
+```bash
+echo "Bonjour le terminal"
+echo "<h1>Bienvenue</h1>" > bienvenue.html
+ls
+cat bienvenue.html
+```
+
+Nettoie ensuite :
+
+```bash
+rm bienvenue.html
+```
+
+<Aside type="note" title="Question">
+  Quelle est la différence entre `echo "texte"` et `echo "texte" > fichier` ?
+</Aside>
+
+### 3 Créer et organiser des dossiers et fichiers
+
+Crée un petit espace de travail temporaire :
+
+```bash
+mkdir labo-test
+cd labo-test
+mkdir docs images
+touch docs/notes.txt
+echo "Ceci est un test" > docs/notes.txt
+cat docs/notes.txt
+ls -R
+```
+
+<Aside type="note" title="Question">
+  Que fait la commande `ls -R` ? En quoi est-elle utile pour vérifier la structure d'un projet ?
+</Aside>
+
+### 4 Naviguer avec des chemins relatifs et absolus
+
+Depuis le dossier `labo-test`, explore la navigation :
+
+```bash
+cd docs
+pwd
+cd ..
+pwd
+cd images
+pwd
+```
+
+Maintenant, reviens au dossier `labo-test` en utilisant un **chemin absolu**. Affiche d'abord le chemin de ton dossier parent :
+
+```bash
+cd ..
+pwd
+```
+
+Puis utilise ce chemin pour y revenir directement, par exemple :
+
+```bash
+cd /home/labex/labo-test
+```
+
+<Aside type="note" title="Questions">
+  1. Tu es dans `/home/labex/labo-test/images`. Écris la commande pour atteindre le dossier `docs` avec un chemin **relatif**.
+  2. Écris la même commande avec un chemin **absolu**.
+  3. Lequel des deux fonctionnerait peu importe le dossier dans lequel tu te trouves ?
+</Aside>
+
+### 5 Supprimer des fichiers et des dossiers
+
+Toujours dans `labo-test`, pratique la suppression :
+
+```bash
+rm docs/notes.txt
+ls docs
+rmdir docs
+rmdir images
+ls
+cd ..
+rmdir labo-test
+```
+
+Essaie maintenant de provoquer une erreur. Recrée un dossier avec du contenu et tente `rmdir` :
+
+```bash
+mkdir erreur-test
+touch erreur-test/fichier.txt
+rmdir erreur-test
+```
+
+Observe le message d'erreur, puis nettoie :
+
+```bash
+rm -r erreur-test
+```
+
+<Aside type="note" title="Questions">
+  1. Que se passe-t-il quand on utilise `rmdir` sur un dossier qui contient un fichier ? Recopie le message d'erreur.
+  2. Pourquoi faut-il être particulièrement prudent avec `rm -r` ?
+</Aside>
+
+---
+
+## Partie 2 : Créer un portfolio
+
+### Objectif
+
+Reproduis la structure suivante dans un dossier nommé `portfolio` :
+
+```
+portfolio/
+├── index.html
+├── css/
+│   └── style.css
+├── js/
+│   └── script.js
+└── images/
+```
+
+### Contraintes
+
+- Utilise uniquement le terminal (pas l'explorateur de fichiers).
+- Les fichiers `index.html`, `style.css` et `script.js` doivent contenir au moins une ligne de contenu pertinent.
+- Vérifie chaque étape avec `ls`, `ls -R` et `cat`.
+
+### Trace des commandes
+
+<Aside type="caution" title="Important">
+  **Conserve une trace de toutes les commandes que tu exécutes pour réaliser ce défi.** Tu peux copier-coller chaque commande dans un fichier texte au fur et à mesure, ou utiliser la commande `history` une fois le défi terminé :
+
+  ```bash
+  history > mes-commandes.txt
+  ```
+</Aside>
+
+### Analyse : vers l'automatisation
+
+Une fois l'exercice complété, relis ta trace de commandes et essaie de trouver une séquence 
+qui permettrait d'automatiser ces actions.

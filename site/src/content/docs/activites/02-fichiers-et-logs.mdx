@@ -1,0 +1,397 @@
+---
+title: "Activité 2 : Manipulation de fichiers et consultation de logs"
+description: "Organiser, consulter et archiver des fichiers dans un scénario de serveur de monitoring : cp, mv, rm, cat, less, head, tail et redirections."
+sidebar:
+  label: "Fichiers et logs"
+---
+
+import { Tabs, TabItem, Aside, Steps, Card, CardGrid } from '@astrojs/starlight/components';
+
+## Contexte
+
+Un petit serveur de monitoring tourne sur une machine Linux. 
+Son rôle est de surveiller l'état du système (processeur, mémoire, disque) et 
+d'écrire des **fichiers de logs** — des journaux texte qui enregistrent ce qui
+se passe sur la machine, ligne par ligne.
+
+En tant qu'administrateur, tu dois régulièrement :
+
+- **consulter** les logs pour comprendre ce qui se passe ;
+- **organiser** les fichiers (les archiver, les renommer, les déplacer) ;
+- **extraire** de l'information utile à l'aide de redirections.
+
+Dans cette activité, tu vas **simuler ce travail**. Tu vas créer toi-même les fichiers de logs, puis les manipuler comme si un vrai serveur les avait générés.
+
+## Objectifs d'apprentissage
+
+À la fin de cette activité, tu devrais être capable de :
+
+- copier, déplacer, renommer et supprimer des fichiers et des dossiers ;
+- consulter le contenu d'un fichier avec `cat`, `less`, `head` et `tail` ;
+- choisir la bonne commande de consultation selon la situation ;
+- utiliser les redirections `>` et `>>` pour écrire et ajouter du contenu ;
+- combiner des commandes pour extraire de l'information utile ;
+- organiser des fichiers dans une arborescence de projet.
+
+## Nouvelles commandes
+
+### Copier et déplacer
+
+```bash
+cp fichier.txt copie.txt          # copier un fichier
+cp fichier.txt dossier/           # copier dans un dossier
+cp -r dossier/ copie-dossier/     # copier un dossier entier
+mv fichier.txt nouveau-nom.txt    # renommer un fichier
+mv fichier.txt dossier/           # déplacer dans un dossier
+```
+
+<Aside type="caution" title="mv écrase sans prévenir">
+  Si le fichier de destination existe déjà, `mv` le remplace sans demander confirmation.
+</Aside>
+
+### Consulter le contenu d'un fichier
+
+| Commande | Usage |
+|----------|-------|
+| `cat fichier` | Affiche tout le contenu d'un coup |
+| `less fichier` | Affiche le contenu page par page (quitter avec `q`) |
+| `head fichier` | Affiche les 10 premières lignes |
+| `head -n 5 fichier` | Affiche les 5 premières lignes |
+| `tail fichier` | Affiche les 10 dernières lignes |
+| `tail -n 3 fichier` | Affiche les 3 dernières lignes |
+
+<Aside type="tip" title="Quand utiliser quoi ?">
+  - `cat` : fichiers courts, ou pour combiner des fichiers.
+  - `less` : fichiers longs qu'on veut parcourir.
+  - `head` : voir le début d'un log (les premières entrées).
+  - `tail` : voir la fin d'un log (les entrées les plus récentes).
+</Aside>
+
+### Redirections
+
+```bash
+echo "texte" > fichier.txt       # écrire (écrase le contenu existant)
+echo "texte" >> fichier.txt      # ajouter à la fin (sans écraser)
+head -5 log.txt > resume.txt     # extraire les 5 premières lignes dans un fichier
+```
+{/* 
+```bash
+echo "texte" > fichier.txt       # écrire (écrase le contenu existant)
+echo "texte" >> fichier.txt      # ajouter à la fin (sans écraser)
+cat a.txt b.txt > combine.txt    # combiner deux fichiers dans un nouveau
+head -5 log.txt > resume.txt     # extraire les 5 premières lignes dans un fichier
+``` */}
+
+<Aside type="caution" title="La différence entre > et >>">
+  `>` **écrase** le fichier s'il existe déjà. `>>` **ajoute** à la fin du fichier. Confondre les deux peut faire perdre des données.
+</Aside>
+
+---
+
+## Partie 1 : Mettre en place l'environnement du serveur
+
+### 1. Créer la structure de dossiers
+
+Le serveur organise ses fichiers dans plusieurs dossiers. Crée cette structure :
+
+```bash
+mkdir -p serveur-monitor/logs
+mkdir serveur-monitor/rapports
+mkdir serveur-monitor/archives
+mkdir serveur-monitor/config
+cd serveur-monitor
+```
+
+Vérifie avec `ls -R`.
+
+<Aside type="note" title="Question">
+  Que fait l'option `-p` dans `mkdir -p` ? Essaie `mkdir -p a/b/c` pour observer le résultat, puis nettoie avec `rm -r a`.
+</Aside>
+
+### 2. Générer les fichiers de logs
+
+Un serveur de monitoring écrit ses observations ligne par ligne dans des fichiers. Simule la création de deux fichiers de logs.
+
+**Log système du 20 mars :**
+
+```bash
+echo "[2026-03-20 08:00] INFO  Démarrage du serveur" > logs/sys-2026-03-20.log
+echo "[2026-03-20 08:01] INFO  Mémoire : 2.1 Go / 8 Go" >> logs/sys-2026-03-20.log
+echo "[2026-03-20 08:05] OK    CPU : 12%" >> logs/sys-2026-03-20.log
+echo "[2026-03-20 09:15] WARN  Disque : 81% utilisé" >> logs/sys-2026-03-20.log
+echo "[2026-03-20 10:30] OK    CPU : 8%" >> logs/sys-2026-03-20.log
+echo "[2026-03-20 11:00] INFO  Mémoire : 3.4 Go / 8 Go" >> logs/sys-2026-03-20.log
+echo "[2026-03-20 12:00] OK    CPU : 15%" >> logs/sys-2026-03-20.log
+echo "[2026-03-20 14:22] ERROR Disque : 95% utilisé - seuil critique" >> logs/sys-2026-03-20.log
+echo "[2026-03-20 14:23] WARN  Nettoyage automatique déclenché" >> logs/sys-2026-03-20.log
+echo "[2026-03-20 14:30] INFO  Disque : 72% après nettoyage" >> logs/sys-2026-03-20.log
+echo "[2026-03-20 16:00] INFO  Arrêt planifié du serveur" >> logs/sys-2026-03-20.log
+```
+
+**Log système du 21 mars :**
+
+```bash
+echo "[2026-03-21 08:00] INFO  Démarrage du serveur" > logs/sys-2026-03-21.log
+echo "[2026-03-21 08:02] OK    CPU : 5%" >> logs/sys-2026-03-21.log
+echo "[2026-03-21 08:03] INFO  Mémoire : 1.8 Go / 8 Go" >> logs/sys-2026-03-21.log
+echo "[2026-03-21 09:00] OK    CPU : 22%" >> logs/sys-2026-03-21.log
+echo "[2026-03-21 10:15] WARN  Mémoire : 6.2 Go / 8 Go" >> logs/sys-2026-03-21.log
+echo "[2026-03-21 11:30] ERROR Mémoire : 7.9 Go / 8 Go - seuil critique" >> logs/sys-2026-03-21.log
+echo "[2026-03-21 11:31] WARN  Redémarrage du service monitoring" >> logs/sys-2026-03-21.log
+echo "[2026-03-21 11:35] INFO  Mémoire : 2.0 Go / 8 Go après redémarrage" >> logs/sys-2026-03-21.log
+echo "[2026-03-21 14:00] OK    CPU : 18%" >> logs/sys-2026-03-21.log
+echo "[2026-03-21 16:00] INFO  Arrêt planifié du serveur" >> logs/sys-2026-03-21.log
+```
+
+**Fichier de configuration :**
+
+```bash
+echo "port=3000" > config/serveur.conf
+echo "intervalle=60" >> config/serveur.conf
+echo "niveau_log=INFO" >> config/serveur.conf
+echo "dossier_logs=./logs" >> config/serveur.conf
+```
+
+Vérifie que tout est en place :
+
+```bash
+ls -R
+```
+
+<Aside type="note" title="Questions">
+  1. Pourquoi utilise-t-on `>` pour la première ligne de chaque fichier et `>>` pour les suivantes ?
+  2. Que se passerait-il si tu utilisais `>` au lieu de `>>` pour la dernière ligne du log du 20 mars ?
+</Aside>
+
+---
+
+## Partie 2 : Consulter les logs
+
+### 1. Voir le contenu complet
+
+Affiche le log du 20 mars :
+
+```bash
+cat logs/sys-2026-03-20.log
+```
+
+### 2. Voir les premières et dernières entrées
+
+Le serveur vient de démarrer — vérifie les premières lignes du log du jour :
+
+```bash
+head -n 3 logs/sys-2026-03-21.log
+```
+
+Il est 16 h — vérifie les dernières activités :
+
+```bash
+tail -n 3 logs/sys-2026-03-21.log
+```
+
+### 3. Parcourir un fichier long
+
+Avec `less`, tu peux naviguer dans un fichier page par page :
+
+```bash
+less logs/sys-2026-03-20.log
+```
+
+<Aside type="tip" title="Navigation dans less">
+  - Flèches haut/bas : défiler ligne par ligne
+  - Espace : page suivante
+  - `b` : page précédente
+  - `q` : quitter
+</Aside>
+
+### 4. Consulter la configuration
+
+Affiche la configuration actuelle du serveur :
+
+```bash
+cat config/serveur.conf
+```
+
+<Aside type="note" title="Questions">
+  1. Tu veux vérifier rapidement si le serveur a bien démarré ce matin. Quelle commande utilises-tu et pourquoi ?
+  2. Tu veux voir les derniers événements enregistrés. Quelle commande utilises-tu ?
+  3. Tu reçois un fichier de log de 500 lignes. Pourquoi `cat` serait un mauvais choix pour le consulter ?
+</Aside>
+
+---
+
+## Partie 3 — Organiser et archiver
+
+### 1. Archiver les logs
+
+Le log du 20 mars est terminé. Copie-le dans le dossier d'archives :
+
+```bash
+cp logs/sys-2026-03-20.log archives/
+ls archives
+```
+
+### 2. Renommer un fichier archivé
+
+Par convention, les archives portent le préfixe `archive-`. Renomme le fichier :
+
+```bash
+mv archives/sys-2026-03-20.log archives/archive-sys-2026-03-20.log
+ls archives
+```
+
+### 3. Créer un rapport
+
+Génère un rapport qui combine les informations importantes :
+
+```bash
+echo "=== Rapport du 20 mars 2026 ===" > rapports/rapport-2026-03-20.txt
+echo "" >> rapports/rapport-2026-03-20.txt
+echo "--- Début de journée ---" >> rapports/rapport-2026-03-20.txt
+head -n 3 logs/sys-2026-03-20.log >> rapports/rapport-2026-03-20.txt
+echo "" >> rapports/rapport-2026-03-20.txt
+echo "--- Fin de journée ---" >> rapports/rapport-2026-03-20.txt
+tail -n 3 logs/sys-2026-03-20.log >> rapports/rapport-2026-03-20.txt
+```
+
+Vérifie le résultat :
+
+```bash
+cat rapports/rapport-2026-03-20.txt
+```
+
+### 4. Combiner des logs
+
+Combine les deux logs dans un seul fichier pour avoir une vue d'ensemble :
+
+```bash
+cat logs/sys-2026-03-20.log logs/sys-2026-03-21.log > rapports/historique-complet.txt
+cat rapports/historique-complet.txt
+```
+
+### 5. Nettoyer les fichiers temporaires
+
+Crée un fichier temporaire, puis supprime-le :
+
+```bash
+touch logs/temp-debug.log
+ls logs
+rm logs/temp-debug.log
+ls logs
+```
+
+<Aside type="note" title="Questions">
+  1. Quelle est la différence entre `cp` et `mv` ? Après un `cp`, combien de copies du fichier existent ? Et après un `mv` ?
+  2. Dans la section 3.3, pourquoi utilise-t-on `>>` (et non `>`) pour ajouter les résultats de `head` et `tail` au rapport ?
+  3. Tu dois déplacer tous les logs de mars dans les archives et les renommer avec le préfixe `archive-`. Écris les commandes nécessaires pour le log du 21 mars.
+</Aside>
+
+---
+
+## Partie 4 — Défi : journée d'administration
+
+### Objectif
+
+Tu prends en charge une nouvelle journée de monitoring. Réalise les tâches suivantes **sans aide pas à pas** — utilise les commandes apprises dans les parties précédentes.
+
+<Steps>
+1. **Générer le log du 22 mars**
+   Crée le fichier `logs/sys-2026-03-22.log` avec au moins 8 lignes réalistes. Inclus au minimum un message INFO, un OK, un WARN et un ERROR. Respecte le format des logs précédents.
+
+2. **Consulter et vérifier**
+   Affiche les 3 premières lignes pour vérifier le démarrage. Affiche les 3 dernières pour voir la fin de journée. Parcours le fichier complet avec `less`.
+
+3. **Créer le rapport du 22 mars**
+   Génère `rapports/rapport-2026-03-22.txt` contenant un titre, les 3 premières lignes et les 3 dernières lignes du log, séparées par des en-têtes clairs.
+
+4. **Archiver**
+   Copie le log du 21 mars dans `archives/` et renomme-le avec le préfixe `archive-`.
+
+5. **Mettre à jour l'historique**
+   Ajoute le contenu du log du 22 mars à la fin de `rapports/historique-complet.txt`.
+
+6. **Sauvegarder la configuration**
+   Copie `config/serveur.conf` dans `archives/serveur-backup.conf`.
+
+7. **Vérification finale**
+   Affiche l'arborescence complète avec `ls -R` et vérifie le contenu des fichiers clés avec `cat`.
+</Steps>
+
+### Trace des commandes
+
+<Aside type="caution" title="Important">
+  **Conserve une trace de toutes les commandes que tu exécutes pour réaliser ce défi.** Une fois terminé :
+
+  ```bash
+  history > mes-commandes-activite2.txt
+  ```
+</Aside>
+
+### Analyse : vers l'automatisation
+
+Relis ta trace de commandes et réponds aux questions suivantes :
+
+1. Quelles commandes as-tu répétées le plus souvent ?
+2. Les étapes « générer un log → créer un rapport → archiver → mettre à jour l'historique » suivent-elles toujours le même patron ?
+3. Si tu devais faire ce travail chaque jour pendant un mois, combien de commandes taperais-tu au total ?
+4. En observant ta trace, quelles étapes pourraient être regroupées dans un seul fichier exécutable ?
+5. Si ce fichier existait, que faudrait-il pouvoir y changer pour l'adapter à une nouvelle date ?
+
+---
+
+## Pour aller plus loin
+
+Dans un vrai projet, le serveur génère les logs automatiquement. Voici à quoi pourrait ressembler un micro-serveur Node.js qui produit les mêmes fichiers que ceux que tu as créés manuellement :
+
+```javascript
+// serveur-monitor.js — exemple illustratif, pas à exécuter
+const fs = require("fs");
+const http = require("http");
+
+const aujourdhui = new Date().toISOString().split("T")[0];
+const fichierLog = `./logs/sys-${aujourdhui}.log`;
+
+function ecrireLog(niveau, message) {
+  const heure = new Date().toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" });
+  const ligne = `[${aujourdhui} ${heure}] ${niveau.padEnd(5)} ${message}\n`;
+  fs.appendFileSync(fichierLog, ligne);
+}
+
+const serveur = http.createServer((req, res) => {
+  ecrireLog("INFO", `Requête reçue : ${req.url}`);
+  res.end("OK");
+});
+
+serveur.listen(3000, () => {
+  ecrireLog("INFO", "Démarrage du serveur sur le port 3000");
+});
+```
+
+Quelques observations :
+
+- `fs.appendFileSync` fait exactement ce que `echo "texte" >> fichier` fait dans le terminal : il ajoute une ligne à la fin du fichier.
+- Le nom du fichier contient la date du jour, ce qui correspond à la convention `sys-2026-03-20.log` que tu as utilisée.
+- Chaque requête HTTP génère une nouvelle ligne dans le log — en production, un tel fichier peut atteindre des milliers de lignes, d'où l'utilité de `less`, `head` et `tail`.
+
+---
+
+## Travail à remettre
+
+### Livrables
+
+1. Les **réponses aux questions** des parties 1, 2 et 3.
+2. L'**arborescence complète** du dossier `serveur-monitor`, vérifiée avec `ls -R`.
+3. Le **contenu des fichiers clés** : le log du 22 mars, le rapport du 22 mars, l'historique complet, et la sauvegarde de configuration — vérifiés avec `cat`.
+4. La **trace de tes commandes** (`mes-commandes-activite2.txt`).
+5. Les **réponses aux questions d'analyse** sur l'automatisation (partie 4).
+
+### Grille d'évaluation
+
+| Critère | Points |
+|---------|--------|
+| Réponses aux questions des parties 1, 2 et 3 (clarté et justesse) | /5 |
+| Log du 22 mars réaliste et bien formaté | /3 |
+| Rapport, archive et historique correctement générés | /4 |
+| Trace des commandes fournie | /3 |
+| Réflexion sur l'automatisation | /5 |
+| **Total** | **/20** |

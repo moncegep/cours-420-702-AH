@@ -1,4 +1,365 @@
 ---
-title: Semaine 1 - Introduction
-description: Introduction au cours et rappel des notions de base de l'ordinateur.
+title: "Introduction aux systèmes d'exploitation"
+description: "Comprendre le rôle d'un système d'exploitation, l'architecture d'un ordinateur et la place de Linux dans le développement web."
+sidebar:
+  label: "Bloc 1 : Introduction aux SE"
+  order: 1
 ---
+
+import { Tabs, TabItem, Aside, Steps, Card, CardGrid } from '@astrojs/starlight/components';
+
+Chaque fois que vous visitez un site web, une chaîne invisible se met en marche : votre navigateur envoie une requête à un serveur, ce serveur exécute du code, interroge une base de données et renvoie une page. **Au cœur de cette mécanique se trouve un système d'exploitation** — le logiciel qui orchestre tout le matériel et permet aux applications de fonctionner.
+
+Ce premier bloc pose les bases : qu'est-ce qu'un système d'exploitation, comment un ordinateur est organisé, et pourquoi Linux est l'environnement de référence pour le développement web.
+
+<Aside type="tip" title="Compétences visées">
+  - Expliquer le rôle d'un système d'exploitation dans le fonctionnement d'un ordinateur
+  - Identifier les ressources principales d'un système informatique
+  - Situer Linux dans l'écosystème du développement web
+  - Naviguer dans l'environnement LabEx
+</Aside>
+
+---
+
+## Qu'est-ce qu'un système ?
+
+Avant de parler de système d'exploitation, clarifions la notion de **système**. Un système est un ensemble de composants qui interagissent pour accomplir un objectif commun.
+
+<CardGrid>
+  <Card title="Système de transport" icon="rocket">
+    Routes, véhicules, feux de circulation et conducteurs collaborent pour déplacer des personnes d'un point à un autre.
+  </Card>
+  <Card title="Système informatique" icon="laptop">
+    Matériel, logiciels et utilisateurs collaborent pour traiter, stocker et communiquer de l'information.
+  </Card>
+</CardGrid>
+
+Un **système informatique** est composé de trois couches qui travaillent ensemble :
+
+| Couche | Rôle | Exemples |
+|---|---|---|
+| **Matériel** (*hardware*) | Exécuter physiquement les opérations | Processeur, mémoire, disque, carte réseau |
+| **Système d'exploitation** | Gérer le matériel et offrir des services aux applications | Linux, Windows, macOS, Android |
+| **Applications** | Répondre aux besoins de l'utilisateur | Navigateur, éditeur de code, serveur web |
+
+<Aside type="note" title="Analogie">
+  Pensez à un restaurant : le **matériel**, c'est la cuisine (fours, réfrigérateurs, ustensiles). Le **système d'exploitation**, c'est le chef de cuisine qui coordonne les ressources. Les **applications**, ce sont les plats commandés par les clients.
+</Aside>
+
+---
+
+## Le rôle du système d'exploitation
+
+Le système d'exploitation (SE) est le logiciel fondamental qui démarre avec l'ordinateur et reste actif en permanence. Il joue deux rôles principaux.
+
+### Gestionnaire de ressources
+
+Le SE répartit les ressources matérielles entre les programmes qui en ont besoin :
+
+| Ressource | Ce que le SE gère | Exemple concret |
+|---|---|---|
+| **Processeur** (CPU) | Quel programme s'exécute, et pendant combien de temps | Votre navigateur et votre éditeur de code partagent le même processeur |
+| **Mémoire vive** (RAM) | Quel espace mémoire est attribué à chaque programme | Node.js reçoit 512 Mo, le navigateur reçoit 1 Go |
+| **Stockage** (disque) | Comment les fichiers sont organisés et accessibles | Vos fichiers HTML sont rangés dans `/home/etudiant/projet/` |
+| **Périphériques** | Comment communiquer avec le clavier, l'écran, le réseau | Les données reçues par la carte réseau sont transmises au serveur web |
+
+### Interface entre l'utilisateur et le matériel
+
+Sans système d'exploitation, il faudrait programmer directement le matériel pour chaque tâche. Le SE offre une **couche d'abstraction** : vous tapez une commande ou cliquez sur un bouton, et le SE traduit cette action en instructions que le matériel comprend.
+
+<Aside type="caution" title="Un programme ne touche jamais directement le matériel">
+  Quand un serveur Node.js écoute sur le port 3000, il ne parle pas directement à la carte réseau. Il demande au système d'exploitation de le faire via un **appel système**. Le SE garantit que plusieurs programmes peuvent utiliser le réseau sans interférence.
+</Aside>
+
+---
+
+## Architecture générale d'un système informatique
+
+### Les quatre ressources principales
+
+<Tabs>
+  <TabItem label="Processeur">
+    Le **processeur** (CPU — *Central Processing Unit*) est le cerveau de l'ordinateur. Il exécute les instructions des programmes, une à une, à très grande vitesse.
+
+    **Caractéristiques clés :**
+    - **Fréquence** (ex. : 3,5 GHz) — vitesse d'exécution des instructions
+    - **Cœurs** (ex. : 8 cœurs) — capacité à exécuter plusieurs tâches en parallèle
+
+    **En développement web :** Quand un serveur reçoit 100 requêtes simultanées, le processeur (avec l'aide du SE) alterne rapidement entre elles pour donner l'impression qu'elles sont traitées en même temps.
+  </TabItem>
+
+  <TabItem label="Mémoire vive">
+    La **mémoire vive** (RAM — *Random Access Memory*) est l'espace de travail temporaire de l'ordinateur. Elle stocke les données des programmes en cours d'exécution.
+
+    **Caractéristiques clés :**
+    - **Rapide** — beaucoup plus rapide que le disque
+    - **Volatile** — tout est perdu à l'extinction de l'ordinateur
+    - **Capacité** (ex. : 8 Go, 16 Go)
+
+    **En développement web :** Quand un serveur Express.js traite une requête, les variables, les objets et les données de la base de données en cours de traitement sont en mémoire vive.
+  </TabItem>
+
+  <TabItem label="Stockage">
+    Le **stockage** (disque dur ou SSD) conserve les données de façon permanente, même quand l'ordinateur est éteint.
+
+    **Caractéristiques clés :**
+    - **Persistant** — les données survivent au redémarrage
+    - **Grande capacité** (ex. : 256 Go, 1 To)
+    - **Plus lent** que la mémoire vive
+
+    **En développement web :** Vos fichiers de code source, les fichiers de configuration du serveur et les bases de données sont stockés sur le disque.
+  </TabItem>
+
+  <TabItem label="Périphériques">
+    Les **périphériques** sont les dispositifs qui permettent à l'ordinateur de communiquer avec l'extérieur.
+
+    **Types principaux :**
+    - **Entrée** — clavier, souris, microphone
+    - **Sortie** — écran, imprimante, haut-parleurs
+    - **Entrée/sortie** — carte réseau, clé USB, disque externe
+
+    **En développement web :** La **carte réseau** est le périphérique le plus important — c'est par elle que transitent toutes les requêtes HTTP entre le client et le serveur.
+  </TabItem>
+</Tabs>
+
+---
+
+## Les systèmes d'exploitation courants
+
+Il existe plusieurs familles de systèmes d'exploitation, chacune avec ses usages principaux :
+
+| Système | Famille | Usage principal |
+|---|---|---|
+| **Windows** 10/11 | NT | Postes de travail, bureautique, jeux |
+| **macOS** | Unix (BSD) | Postes de travail créatifs et développement |
+| **Linux** (Ubuntu, Debian, Fedora…) | Unix | Serveurs web, cloud, développement |
+| **Android** | Linux | Téléphones et tablettes |
+| **iOS** | Unix (BSD) | Téléphones et tablettes Apple |
+
+<Aside type="note" title="Remarquez un patron">
+  Trois des cinq systèmes listés sont basés sur **Unix** ou **Linux**. Cette famille domine le monde des serveurs et du développement logiciel.
+</Aside>
+
+---
+
+## Pourquoi Linux pour le développement web ?
+
+Ce n'est pas un hasard si ce cours utilise Linux. Dans le monde professionnel du développement web, Linux est omniprésent.
+
+<CardGrid>
+  <Card title="Serveurs web" icon="server">
+    La très grande majorité des serveurs web dans le monde tournent sous Linux. Quand vous visitez un site, il y a de fortes chances qu'il soit hébergé sur un serveur Linux.
+  </Card>
+  <Card title="Outils de développement" icon="seti:shell">
+    Git, Node.js, npm, Docker, les bases de données — la plupart des outils du développeur web sont conçus d'abord pour Linux.
+  </Card>
+  <Card title="Cloud et déploiement" icon="cloud">
+    AWS, Google Cloud, Azure, Heroku — les plateformes d'hébergement utilisent massivement Linux. Déployer une application web, c'est souvent configurer un serveur Linux.
+  </Card>
+  <Card title="Gratuit et ouvert" icon="open-book">
+    Linux est un logiciel libre : gratuit, modifiable et transparent. On peut inspecter exactement comment il fonctionne — un avantage pédagogique majeur.
+  </Card>
+</CardGrid>
+
+### La pile serveur web typique
+
+Pour comprendre où Linux se situe dans l'écosystème web, voici une pile (*stack*) serveur typique :
+
+| Couche | Composant | Rôle |
+|---|---|---|
+| **Système d'exploitation** | Linux (Ubuntu) | Gère le matériel et les processus |
+| **Serveur web** | Nginx ou Apache | Reçoit les requêtes HTTP et les distribue |
+| **Environnement d'exécution** | Node.js, Python, PHP | Exécute le code de l'application |
+| **Base de données** | PostgreSQL, MongoDB | Stocke les données de l'application |
+
+<Aside type="tip" title="Tout au long du programme">
+  Dans vos cours de développement web, vous allez installer et configurer chacune de ces couches. Ce cours vous donne les fondations : comprendre et maîtriser la couche du bas — le système d'exploitation.
+</Aside>
+
+---
+
+## Environnement pratique : LabEx
+
+Pour les premières semaines du cours, vous travaillerez dans **LabEx**, un environnement Linux accessible directement depuis votre navigateur. Aucune installation n'est nécessaire.
+
+<Steps>
+1. **Accéder à LabEx** via le lien fourni sur le site du cours
+2. **Ouvrir un terminal** — c'est la fenêtre noire avec une invite de commande
+3. **Taper votre première commande** et observer le résultat
+</Steps>
+
+### Premières commandes à essayer
+
+Ouvrez le terminal LabEx et essayez ces commandes une par une :
+
+```bash
+# Afficher un message
+echo "Bonjour, monde !"
+
+# Qui suis-je ? (nom d'utilisateur)
+whoami
+
+# Où suis-je ? (répertoire courant)
+pwd
+
+# Quelle date sommes-nous ?
+date
+
+# Quel système d'exploitation tourne ici ?
+uname -a
+
+# Depuis combien de temps le système est-il allumé ?
+uptime
+```
+
+<Aside type="caution" title="Attention à la casse">
+  Linux fait la distinction entre les majuscules et les minuscules. `Date` et `date` sont deux choses différentes — seule la seconde est une commande valide. C'est une différence fondamentale avec Windows.
+</Aside>
+
+---
+
+## Exercice — Exploration du système
+
+<Tabs>
+  <TabItem label="Énoncé">
+    Dans l'environnement LabEx, répondez aux questions suivantes en utilisant les commandes appropriées.
+
+    <Steps>
+    1. Quel est votre nom d'utilisateur sur ce système ?
+    2. Dans quel répertoire vous trouvez-vous à l'ouverture du terminal ?
+    3. Quel est le nom complet du système d'exploitation (nom et version du noyau) ?
+    4. Quelle est la date et l'heure actuelles du système ?
+    5. Depuis combien de temps le système est-il en fonction ?
+    6. Affichez le message `Je suis prêt pour le développement web !` dans le terminal
+    </Steps>
+  </TabItem>
+
+  <TabItem label="Indices">
+    - Les commandes nécessaires ont toutes été présentées plus haut dans cette page
+    - Pour la question 3, cherchez parmi les commandes qui donnent des informations sur le système
+    - Pour la question 6, quelle commande permet d'afficher du texte ?
+
+    <Aside type="tip" title="Astuce générale">
+      Si vous ne vous souvenez plus d'une commande, relisez la section « Premières commandes à essayer ». En situation réelle, un développeur consulte constamment la documentation — c'est normal et souhaitable.
+    </Aside>
+  </TabItem>
+
+  <TabItem label="Validation">
+    Voici les commandes attendues :
+
+    ```bash
+    # 1. Nom d'utilisateur
+    whoami
+    # → labex (ou le nom configuré dans votre environnement)
+
+    # 2. Répertoire courant
+    pwd
+    # → /home/labex
+
+    # 3. Système d'exploitation
+    uname -a
+    # → Linux ... Ubuntu ... (la sortie exacte varie)
+
+    # 4. Date et heure
+    date
+    # → mar 16 mar 2026 ... (la sortie dépend du moment)
+
+    # 5. Temps de fonctionnement
+    uptime
+    # → ... up X min, ...
+
+    # 6. Afficher un message
+    echo "Je suis prêt pour le développement web !"
+    ```
+  </TabItem>
+</Tabs>
+
+---
+
+## Quiz — Vérifie ta compréhension
+
+export const quizBloc1 = [
+  {
+    id: 'q1',
+    question: "Quel est le rôle principal d'un système d'exploitation ?",
+    options: [
+      "Afficher des pages web",
+      "Gérer les ressources matérielles et offrir des services aux applications",
+      "Stocker les fichiers sur le disque dur",
+      "Connecter l'ordinateur à Internet"
+    ],
+    correct: "Gérer les ressources matérielles et offrir des services aux applications",
+    explanation: "Le SE est l'intermédiaire entre le matériel et les applications. Il gère le processeur, la mémoire, le stockage et les périphériques, et offre une interface pour que les programmes n'aient pas à interagir directement avec le matériel."
+  },
+  {
+    id: 'q2',
+    question: "Quelle est la différence fondamentale entre la mémoire vive (RAM) et le stockage (disque) ?",
+    options: [
+      "La RAM est plus grande que le disque",
+      "Le disque est plus rapide que la RAM",
+      "La RAM est volatile (données perdues à l'extinction), le disque est persistant",
+      "Il n'y a pas de différence, ce sont deux noms pour la même chose"
+    ],
+    correct: "La RAM est volatile (données perdues à l'extinction), le disque est persistant",
+    explanation: "La mémoire vive est rapide mais temporaire : tout est effacé quand l'ordinateur s'éteint. Le stockage (disque dur ou SSD) est plus lent mais conserve les données de façon permanente. Vos fichiers de code sont sur le disque ; les variables de votre programme en cours d'exécution sont en RAM."
+  },
+  {
+    id: 'q3',
+    question: "Pourquoi Linux est-il l'environnement de référence pour le développement web ?",
+    options: [
+      "Parce qu'il est le seul système capable d'afficher des pages web",
+      "Parce qu'il est plus rapide que tous les autres systèmes",
+      "Parce que la majorité des serveurs web tournent sous Linux et les outils de développement y sont natifs",
+      "Parce qu'il est obligatoire pour programmer en JavaScript"
+    ],
+    correct: "Parce que la majorité des serveurs web tournent sous Linux et les outils de développement y sont natifs",
+    explanation: "Linux domine le marché des serveurs web. Les outils comme Git, Node.js, Docker et les bases de données sont conçus d'abord pour Linux. Apprendre Linux, c'est apprendre l'environnement où vos applications seront déployées."
+  },
+  {
+    id: 'q4',
+    question: "Dans la pile serveur web typique, quelle couche se trouve à la base ?",
+    options: [
+      "Le serveur web (Nginx)",
+      "Le système d'exploitation (Linux)",
+      "La base de données (PostgreSQL)",
+      "L'environnement d'exécution (Node.js)"
+    ],
+    correct: "Le système d'exploitation (Linux)",
+    explanation: "Le SE est la fondation de la pile. Sans lui, aucune des autres couches (serveur web, environnement d'exécution, base de données) ne pourrait fonctionner. C'est pourquoi ce cours est un prérequis essentiel pour vos cours de développement."
+  },
+  {
+    id: 'q5',
+    question: "La commande `uname -a` sert à :",
+    options: [
+      "Afficher le nom de l'utilisateur connecté",
+      "Afficher des informations sur le système d'exploitation",
+      "Créer un nouveau fichier",
+      "Afficher le répertoire courant"
+    ],
+    correct: "Afficher des informations sur le système d'exploitation",
+    explanation: "La commande `uname` affiche des informations sur le système. L'option `-a` (pour « all ») affiche toutes les informations disponibles : nom du noyau, version, architecture, etc. Pour le nom d'utilisateur, c'est `whoami` ; pour le répertoire, c'est `pwd`."
+  }
+];
+
+import QuizClassification from '../../../components/QuizClassification';
+
+<QuizClassification client:visible questions={quizBloc1} title="Quiz — Bloc 1" />
+
+---
+
+## En résumé
+
+<CardGrid>
+  <Card title="Système d'exploitation" icon="setting">
+    Logiciel fondamental qui gère les ressources matérielles (CPU, RAM, disque, périphériques) et offre une interface aux applications.
+  </Card>
+  <Card title="Trois couches" icon="list-format">
+    Un système informatique s'organise en matériel → système d'exploitation → applications. Chaque couche dépend de celle du dessous.
+  </Card>
+  <Card title="Linux et le web" icon="linux">
+    Linux domine les serveurs web. L'apprendre, c'est maîtriser l'environnement où vos applications seront déployées.
+  </Card>
+  <Card title="LabEx" icon="laptop">
+    Environnement Linux en ligne pour pratiquer sans installation. On y reviendra avec VirtualBox à la semaine 5.
+  </Card>
+</CardGrid>

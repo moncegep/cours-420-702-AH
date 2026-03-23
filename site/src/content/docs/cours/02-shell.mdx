@@ -1,0 +1,481 @@
+---
+title: "Bloc 2a — Le shell et la navigation"
+description: "Comprendre le shell Linux, la structure des commandes, consulter la documentation et naviguer dans l'arborescence de fichiers."
+sidebar:
+  label: "Shell et navigation"
+  order: 2
+---
+
+import { Tabs, TabItem, Aside, Steps, Card, CardGrid } from '@astrojs/starlight/components';
+import QuizClassification from './../../../components/QuizClassification';
+
+Un développeur web passe une part significative de son temps dans un **terminal** : lancer un serveur, installer des dépendances, gérer des fichiers, consulter des journaux. Le terminal n'est pas un outil du passé — c'est l'interface la plus directe et la plus puissante pour interagir avec un système d'exploitation.
+
+Ce premier volet vous apprend les fondations : comprendre le shell, décoder la structure d'une commande, naviguer dans l'arborescence de fichiers, et — surtout — apprendre à trouver les réponses par vous-même grâce à la documentation intégrée.
+
+<Aside type="tip" title="Compétences visées">
+  - Expliquer ce qu'est un shell et interpréter l'invite de commande
+  - Décomposer la structure d'une commande (commande, options, arguments)
+  - Consulter la documentation avec `man` et `--help`
+  - Naviguer dans l'arborescence avec les chemins absolus et relatifs
+  - Utiliser les options courantes de `ls`
+</Aside>
+
+---
+
+## Le shell : votre interface avec Linux
+
+### Qu'est-ce qu'un shell ?
+
+Le **shell** est un programme qui interprète les commandes que vous tapez et les transmet au système d'exploitation. C'est votre interlocuteur principal avec Linux.
+
+Quand vous ouvrez un terminal, le shell affiche une **invite de commande** (*prompt*) qui attend votre instruction :
+
+```
+etudiant@labex:~$
+```
+
+Cette invite vous donne plusieurs informations :
+
+| Partie | Signification |
+|---|---|
+| `etudiant` | Votre nom d'utilisateur |
+| `@labex` | Le nom de la machine |
+| `~` | Le répertoire courant (`~` = votre répertoire d'accueil) |
+| `$` | Vous êtes un utilisateur normal (un `#` indiquerait l'administrateur) |
+
+<Aside type="note" title="Quel shell utilisez-vous ?">
+  Il existe plusieurs shells : `bash`, `zsh`, `fish`, etc. Par défaut, Linux utilise **bash** (*Bourne Again SHell*). C'est celui que nous utiliserons tout au long du cours. La commande `echo $SHELL` vous indique quel shell est actif.
+</Aside>
+
+### Structure d'une commande
+
+Toute commande Linux suit la même structure :
+
+```
+commande  [options]  [arguments]
+```
+
+| Élément | Rôle | Exemple |
+|---|---|---|
+| **Commande** | L'action à effectuer | `ls` |
+| **Options** | Modifient le comportement (préfixées par `-` ou `--`) | `-l`, `-a`, `--all` |
+| **Arguments** | La cible de l'action | `/home/etudiant` |
+
+**Exemples concrets :**
+
+```bash
+# Commande seule
+ls
+
+# Commande + option
+ls -l
+
+# Commande + argument
+ls /home
+
+# Commande + option + argument
+ls -la /home/etudiant
+
+# Plusieurs options combinées
+ls -l -a -h
+ls -lah          # Équivalent : options courtes combinées
+```
+
+<Aside type="caution" title="Les espaces comptent">
+  En Linux, l'espace sépare la commande de ses options et arguments. `ls-l` n'est pas la même chose que `ls -l` — le premier serait interprété comme une commande nommée « ls-l » (qui n'existe pas).
+</Aside>
+
+### Options courtes vs longues
+
+La plupart des commandes offrent deux formats d'options :
+
+| Format | Syntaxe | Exemple | Combinable ? |
+|---|---|---|---|
+| **Court** | Un tiret + une lettre | `-l`, `-a` | Oui : `-la` |
+| **Long** | Deux tirets + un mot | `--long`, `--all` | Non |
+
+```bash
+# Ces deux commandes font exactement la même chose
+ls -a
+ls --all
+```
+
+Le format long est plus lisible (utile dans les scripts), le format court est plus rapide à taper (utile au quotidien).
+
+---
+
+## Apprendre à trouver les réponses : man et --help
+
+Aucun développeur ne mémorise toutes les commandes et toutes les options. La compétence la plus importante n'est pas de tout savoir par cœur, mais de **savoir où chercher**.
+
+### La commande `man`
+
+`man` (*manual*) affiche la documentation complète d'une commande :
+
+```bash
+# Consulter le manuel de la commande ls
+man ls
+```
+
+**Navigation dans le manuel :**
+
+| Touche | Action |
+|---|---|
+| `Espace` ou `Page Down` | Page suivante |
+| `b` ou `Page Up` | Page précédente |
+| `/motcle` | Rechercher un mot |
+| `n` | Résultat de recherche suivant |
+| `q` | Quitter le manuel |
+
+### L'option `--help`
+
+La plupart des commandes offrent un résumé rapide avec `--help` :
+
+```bash
+ls --help
+mkdir --help
+cp --help
+```
+
+<Tabs>
+  <TabItem label="man">
+    **Documentation complète.** Ouvre un afficheur plein écran avec la description détaillée de la commande, toutes les options, des exemples et les cas d'erreur.
+
+    ```bash
+    man cp
+    ```
+
+    Idéal quand vous voulez comprendre en profondeur ce que fait une commande ou explorer toutes ses possibilités.
+  </TabItem>
+
+  <TabItem label="--help">
+    **Résumé rapide.** Affiche un aide-mémoire directement dans le terminal — souvent une liste d'options avec une brève description.
+
+    ```bash
+    cp --help
+    ```
+
+    Idéal quand vous connaissez déjà la commande mais avez oublié le nom d'une option.
+  </TabItem>
+</Tabs>
+
+<Aside type="tip" title="Réflexe de développeur">
+  Prenez l'habitude dès maintenant : **avant de chercher sur Google**, essayez `man commande` ou `commande --help`. C'est plus rapide, toujours à jour, et ça fonctionne même sans connexion Internet — un avantage précieux quand vous configurez un serveur distant.
+</Aside>
+
+---
+
+## Navigation dans l'arborescence
+
+### Le répertoire d'accueil
+
+À l'ouverture du terminal, vous êtes dans votre **répertoire d'accueil** (*home directory*) :
+
+```bash
+pwd
+# → /home/etudiant
+```
+
+Le symbole `~` (tilde) est un raccourci qui désigne toujours votre répertoire d'accueil. Ces deux commandes sont équivalentes :
+
+```bash
+cd /home/etudiant
+cd ~
+```
+
+### Chemins absolus et relatifs
+
+Il existe deux façons de désigner un emplacement dans l'arborescence :
+
+<Tabs>
+  <TabItem label="Chemin absolu">
+    Un chemin **absolu** commence toujours par `/` (la racine du système) et donne l'adresse complète d'un fichier ou répertoire.
+
+    ```bash
+    # Aller au répertoire d'accueil
+    cd /home/etudiant
+
+    # Lister le contenu de /etc
+    ls /etc/nginx
+    ```
+
+    **Analogie :** C'est comme une adresse postale complète — « 1234, rue Berri, Montréal, QC ». Peu importe où vous êtes, cette adresse mène toujours au même endroit.
+  </TabItem>
+
+  <TabItem label="Chemin relatif">
+    Un chemin **relatif** part de votre position actuelle. Il ne commence **jamais** par `/`.
+
+    ```bash
+    # Si vous êtes dans /home/etudiant
+    cd projet          # → /home/etudiant/projet
+    cd projet/css      # → /home/etudiant/projet/css
+
+    # Remonter d'un niveau
+    cd ..              # → /home/etudiant
+
+    # Remonter de deux niveaux
+    cd ../..           # → /home
+    ```
+
+    **Analogie :** C'est comme dire « monte un étage et tourne à droite » — le résultat dépend d'où vous partez.
+  </TabItem>
+</Tabs>
+
+### Repères spéciaux
+
+| Symbole | Signification | Exemple |
+|---|---|---|
+| `/` | Racine du système (le tout premier répertoire) | `cd /` |
+| `~` | Répertoire d'accueil de l'utilisateur | `cd ~` |
+| `.` | Répertoire courant (ici) | `cp fichier.txt .` |
+| `..` | Répertoire parent (un niveau au-dessus) | `cd ..` |
+| `-` | Répertoire précédent (où j'étais avant) | `cd -` |
+
+<Aside type="note" title="Le point et le double point">
+  `.` (ici) et `..` (parent) sont des repères que vous utiliserez constamment. Par exemple, `cp /tmp/fichier.txt .` copie un fichier **dans le répertoire où vous êtes**. Sans le `.`, la commande `cp` ne saurait pas où mettre la copie.
+</Aside>
+
+### Commandes de navigation essentielles
+
+| Commande | Action | Exemple |
+|---|---|---|
+| `pwd` | Afficher le répertoire courant (*print working directory*) | `pwd` → `/home/etudiant` |
+| `cd` | Changer de répertoire (*change directory*) | `cd projet` |
+| `cd ..` | Remonter au répertoire parent | `cd ..` |
+| `cd ~` ou `cd` | Retourner au répertoire d'accueil | `cd` |
+| `cd -` | Retourner au répertoire précédent | `cd -` |
+| `ls` | Lister le contenu d'un répertoire | `ls -la` |
+
+### Options utiles de `ls`
+
+```bash
+ls          # Liste simple
+ls -l       # Liste détaillée (permissions, taille, date)
+ls -a       # Inclut les fichiers cachés (commençant par .)
+ls -la      # Détaillée + fichiers cachés
+ls -lh      # Détaillée + tailles lisibles (Ko, Mo, Go)
+ls -lt      # Détaillée + triée par date de modification
+ls -lS      # Détaillée + triée par taille
+ls -R       # Liste récursive (sous-répertoires inclus)
+```
+
+<Aside type="tip" title="Fichiers cachés sous Linux">
+  Tout fichier dont le nom commence par un point (`.bashrc`, `.config`, `.git`) est un **fichier caché**. Il n'apparaît pas avec `ls` tout court — il faut l'option `-a` pour le voir. Les fichiers de configuration de vos outils de développement (Git, npm, ESLint) sont souvent des fichiers cachés.
+</Aside>
+
+---
+
+## Exercice 1 — Découverte du shell
+
+<Tabs>
+  <TabItem label="Énoncé">
+    Exécutez les commandes suivantes et notez les résultats :
+
+    <Steps>
+    1. Affichez le nom de votre shell actif
+    2. Affichez votre nom d'utilisateur
+    3. Affichez votre répertoire courant
+    4. Listez le contenu de votre répertoire d'accueil en format détaillé, incluant les fichiers cachés
+    5. Consultez le manuel de la commande `echo` — quel est son rôle ?
+    6. Utilisez `echo` pour afficher le message : `Mon shell est bash`
+    </Steps>
+  </TabItem>
+
+  <TabItem label="Indices">
+    - Le nom du shell est stocké dans une variable d'environnement. Pour afficher une variable, on utilise `echo $NOM_VARIABLE`
+    - La variable qui contient le shell s'appelle `SHELL`
+    - Pour la question 5, la touche `q` permet de quitter le manuel
+  </TabItem>
+
+  <TabItem label="Validation">
+    ```bash
+    # 1. Shell actif
+    echo $SHELL
+    # → /bin/bash
+
+    # 2. Nom d'utilisateur
+    whoami
+    # → etudiant (ou labex)
+
+    # 3. Répertoire courant
+    pwd
+    # → /home/etudiant
+
+    # 4. Liste détaillée avec fichiers cachés
+    ls -la
+
+    # 5. Manuel de echo
+    man echo
+    # → echo : affiche une ligne de texte (q pour quitter)
+
+    # 6. Afficher un message
+    echo "Mon shell est bash"
+    ```
+  </TabItem>
+</Tabs>
+
+---
+
+## Exercice 2 — Navigation
+
+<Tabs>
+  <TabItem label="Énoncé">
+    <Steps>
+    1. Depuis votre répertoire d'accueil, déplacez-vous dans `/var/log` en utilisant un **chemin absolu**
+    2. Listez le contenu en format détaillé, trié par taille (du plus gros au plus petit)
+    3. Sans revenir au répertoire d'accueil d'abord, déplacez-vous dans `/etc` en utilisant un **chemin relatif**
+    4. Vérifiez que vous êtes bien dans `/etc` avec `pwd`
+    5. Retournez à votre répertoire d'accueil en une seule commande
+    6. Retournez au répertoire précédent (qui devrait être `/etc`) avec le raccourci approprié
+    7. Revenez une dernière fois au répertoire d'accueil
+    </Steps>
+
+    <Aside type="note" title="Défi">
+      Pour la question 3, vous êtes dans `/var/log` et devez aller dans `/etc`. Il faut remonter de **deux niveaux** (de `log` à `var`, puis de `var` à `/`) avant de descendre dans `etc`.
+    </Aside>
+  </TabItem>
+
+  <TabItem label="Indices">
+    - Un chemin absolu commence par `/`
+    - Un chemin relatif utilise `..` pour remonter dans l'arborescence
+    - Depuis `/var/log`, la racine `/` est à deux `..` de distance
+    - Le raccourci pour « revenir où j'étais » est un seul caractère après `cd`
+  </TabItem>
+
+  <TabItem label="Validation">
+    ```bash
+    # 1. Chemin absolu vers /var/log
+    cd /var/log
+
+    # 2. Liste triée par taille
+    ls -lS
+
+    # 3. Chemin relatif de /var/log vers /etc
+    cd ../../etc
+    # Explication : .. → /var, .. → /, etc → /etc
+
+    # 4. Vérification
+    pwd
+    # → /etc
+
+    # 5. Retour au répertoire d'accueil
+    cd ~
+    # ou simplement : cd
+
+    # 6. Retour au répertoire précédent (/etc)
+    cd -
+    # → /etc
+
+    # 7. Retour au répertoire d'accueil
+    cd
+    ```
+
+    <Aside type="tip" title="cd - : l'ascenseur">
+      `cd -` fonctionne comme un interrupteur entre deux répertoires. Très pratique quand vous alternez entre votre projet et un fichier de configuration système.
+    </Aside>
+  </TabItem>
+</Tabs>
+
+---
+
+## Quiz — Vérifie ta compréhension
+
+export const quizBloc2a = [
+  {
+    id: 'q1',
+    question: "Dans l'invite `etudiant@serveur:~/projet$`, que signifie `~/projet` ?",
+    options: [
+      "Le répertoire /projet à la racine du système",
+      "Le répertoire projet dans le répertoire d'accueil de l'utilisateur",
+      "Un raccourci vers le dernier répertoire visité",
+      "Le répertoire parent du répertoire courant"
+    ],
+    correct: "Le répertoire projet dans le répertoire d'accueil de l'utilisateur",
+    explanation: "Le tilde (~) représente le répertoire d'accueil de l'utilisateur. ~/projet est donc équivalent à /home/etudiant/projet. Le $ à la fin indique que c'est un utilisateur normal (pas l'administrateur)."
+  },
+  {
+    id: 'q2',
+    question: "Quelle est la structure générale d'une commande Linux ?",
+    options: [
+      "arguments commande options",
+      "commande [options] [arguments]",
+      "options commande arguments",
+      "commande arguments [options]"
+    ],
+    correct: "commande [options] [arguments]",
+    explanation: "La commande vient toujours en premier, suivie des options (qui modifient son comportement) puis des arguments (la cible de l'action). Les options commencent par - ou --."
+  },
+  {
+    id: 'q3',
+    question: "Quelle est la différence entre `man ls` et `ls --help` ?",
+    options: [
+      "man ls est plus rapide à exécuter",
+      "ls --help fonctionne uniquement sur Ubuntu",
+      "man ls affiche la documentation complète dans un afficheur plein écran, --help affiche un résumé rapide dans le terminal",
+      "Il n'y a aucune différence"
+    ],
+    correct: "man ls affiche la documentation complète dans un afficheur plein écran, --help affiche un résumé rapide dans le terminal",
+    explanation: "man ouvre un afficheur interactif avec la documentation détaillée (exemples, cas d'erreur, options). --help affiche un résumé concis directement dans le terminal. Utilisez --help pour un rappel rapide, man pour approfondir."
+  },
+  {
+    id: 'q4',
+    question: "Vous êtes dans /home/etudiant. Quelle commande vous amène dans /home/etudiant/projet/css ?",
+    options: [
+      "cd /projet/css",
+      "cd projet/css",
+      "cd ~/projet/../css",
+      "cd home/etudiant/projet/css"
+    ],
+    correct: "cd projet/css",
+    explanation: "Puisque vous êtes dans /home/etudiant, le chemin relatif projet/css vous amène directement au bon endroit. La première option est un chemin absolu qui pointe vers /projet/css à la racine (qui n'existe probablement pas). La dernière omet le / initial."
+  },
+  {
+    id: 'q5',
+    question: "Vous êtes dans /var/log. Quel chemin relatif mène à /etc ?",
+    options: [
+      "../etc",
+      "../../etc",
+      "cd /etc",
+      "../log/etc"
+    ],
+    correct: "../../etc",
+    explanation: "Depuis /var/log, un premier .. remonte à /var, un second .. remonte à / (la racine), puis etc descend dans /etc. Le chemin relatif complet est donc ../../etc. L'option cd /etc est un chemin absolu, pas relatif."
+  }
+];
+
+<QuizClassification client:visible questions={quizBloc2a} title="Quiz — Le shell et la navigation" />
+
+---
+
+## Aide-mémoire
+
+<CardGrid>
+  <Card title="Commandes de base" icon="rocket">
+    `echo texte` — afficher du texte
+    `whoami` — nom d'utilisateur
+    `echo $SHELL` — shell actif
+    `clear` — effacer l'écran
+  </Card>
+  <Card title="Documentation" icon="open-book">
+    `man commande` — documentation complète
+    `commande --help` — résumé rapide
+    `/motcle` — chercher dans man
+    `q` — quitter man
+  </Card>
+  <Card title="Se repérer" icon="magnifier">
+    `pwd` — où suis-je ?
+    `ls -la` — qu'y a-t-il ici ?
+    `cd chemin` — aller quelque part
+    `cd ..` — remonter d'un niveau
+    `cd` — retour à l'accueil
+    `cd -` — retour au précédent
+  </Card>
+  <Card title="Repères spéciaux" icon="seti:compass">
+    `/` — racine du système
+    `~` — répertoire d'accueil
+    `.` — répertoire courant
+    `..` — répertoire parent
+    `-` — répertoire précédent
+  </Card>
+</CardGrid>

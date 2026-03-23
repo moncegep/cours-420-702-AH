@@ -1,19 +1,16 @@
 ---
-title: Welcome to Starlight
-description: Get started building your docs site with Starlight.
+title: Fonctionnement et utilisation d'un système d'exploitation
+description: Site présentant le matériel de support du cours 420-702-AH (Fonctionnement et utilisation d'un système d'exploitation).
 template: splash # Remove or comment out this line to display the site sidebar on this page.
 hero:
-  tagline: Congrats on setting up a new Starlight project!
+  title: <b style='color:rgb(218,30,16)'>420-702-AH</b> <br> Fonctionnement et utilisation d'un système d'exploitation
+  tagline: "Du terminal au script d'automatisation avec Linux"
   image:
     file: ../../assets/houston.webp
   actions:
-    - text: Example Guide
-      link: /guides/example/
+    - text: Notes de cours
+      link: /cours/01-introduction
       icon: right-arrow
-    - text: Read the Starlight docs
-      link: https://starlight.astro.build
-      icon: external
-      variant: minimal
 ---
 
 import calendrier from '../../data/course-plan.json';
@@ -24,11 +21,21 @@ import CourseFooter from './../../components/Footer.astro';
 // import LessonVideo from './../../components/LessonVideo.astro';
 // import LessonCard from './../../components/LessonCard.astro';
 
-## Cette semaine
+{/* ## Cette semaine */}
+
+{/* <CardGrid stagger>
+	<Card title="Cours" icon="document">
+		Cette semaine nous consolidons nos apprentissages à date.
+		On révise l'utilisation des **fonctions conditionnelles**, de la **mise en forme conditionnelle** et les **fonctions utilitaires
+    de manipulation de dates et texte**. On fera également une **évaluation** couvrant toutes ces notions.
+	</Card>
+	<Card title="Exerices" icon="puzzle">
+	</Card>
+</CardGrid> */}
 
 
-## Calendrier de la session
+{/* ## Calendrier de la session */}
 
-<CourseCalendar  weeks={calendrier.weeks} phases={calendrier.phases} />
+{/* <CourseCalendar  weeks={calendrier.weeks} phases={calendrier.phases} /> */}
 
 <CourseFooter author={'L-E Lafontant'} />

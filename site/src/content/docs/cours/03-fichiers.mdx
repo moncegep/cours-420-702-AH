@@ -1,0 +1,419 @@
+---
+title: "Fichiers, permissions et liens symboliques"
+description: "Comprendre le rôle du système d'exploitation dans la gestion des fichiers, lire les détails affichés par ls -l, et utiliser les liens symboliques."
+sidebar:
+  label: "Fichiers et permissions"
+---
+
+import { Tabs, TabItem, Aside, Steps, Card, CardGrid } from '@astrojs/starlight/components';
+
+## Le rôle du système d'exploitation
+
+Quand tu enregistres un fichier, tu ne décides pas *où* il est stocké physiquement sur le disque. 
+C'est le **système d'exploitation** (OS) qui s'en charge. Il joue le rôle d'intermédiaire entre toi (ou tes programmes) et le matériel.
+
+Concrètement, l'OS gère trois responsabilités liées aux fichiers :
+
+**L'organisation.** L'OS maintient une arborescence de dossiers et de fichiers. 
+Quand tu tapes `ls` ou que tu ouvres l'explorateur de fichiers, c'est l'OS qui te présente cette structure — le disque dur, lui, ne connaît que des blocs de données numérotés.
+
+**L'accès.** L'OS contrôle qui a le droit de lire, modifier ou exécuter chaque fichier. Sans ce contrôle, n'importe quel programme pourrait modifier n'importe quel fichier du système.
+
+**Le stockage.** L'OS décide comment les données sont réparties sur le disque, gère l'espace libre, et s'assure qu'un fichier supprimé libère bien son espace. Un fichier de 50 Mo peut être dispersé en dizaines de fragments sur le disque — l'OS te le présente comme un tout cohérent.
+
+<Aside type="tip" title="Analogie">
+  L'OS est comme un bibliothécaire. Tu demandes un livre par son titre et son emplacement dans le catalogue (le chemin du fichier). 
+  Le bibliothécaire sait exactement sur quelle étagère, dans quelle rangée le livre se trouve physiquement. Tu n'as pas besoin de le savoir.
+</Aside>
+
+### Les systèmes de fichiers
+
+Pour organiser les données sur un disque, l'OS utilise un **système de fichiers** (*filesystem*). C'est le format qui définit comment les fichiers, les dossiers, les permissions et les métadonnées sont structurés sur le support de stockage.
+
+Chaque OS a ses préférences :
+
+| Système de fichiers | OS principal | Caractéristiques |
+|---------------------|-------------|------------------|
+| **ext4** | Linux | Le standard Linux actuel. Gère les permissions Unix, les liens symboliques, et supporte des fichiers très volumineux. |
+| **NTFS** | Windows | Le standard Windows. Gère les permissions Windows (ACL), le chiffrement et la compression. |
+| **APFS** | macOS | Le standard Apple moderne. Optimisé pour les disques SSD, avec snapshots et clonage rapide de fichiers. |
+| **FAT32** | Universel | Ancien mais compatible partout. Limité à 4 Go par fichier. Utilisé sur les clés USB. |
+| **exFAT** | Universel | Successeur de FAT32 sans la limite de 4 Go. Courant sur les cartes SD et disques externes. |
+
+<Aside type="note" title="Pourquoi c'est pertinent ?">
+  Si tu as déjà eu un message d'erreur en copiant un gros fichier sur une clé USB, c'est probablement parce que la clé était formatée en FAT32 (limite de 4 Go par fichier). Le système de fichiers n'est pas qu'un détail technique — il détermine ce que tu peux faire avec tes fichiers.
+</Aside>
+
+En développement web, tu travailleras presque toujours sur **ext4** (serveurs Linux) ou **APFS/NTFS** (ta machine locale). La différence la plus visible au quotidien : Linux distingue les majuscules et les minuscules dans les noms de fichiers (`Style.css` et `style.css` sont deux fichiers différents), alors que Windows et macOS ne les distinguent pas par défaut.
+
+<Aside type="caution" title="Piège classique en dev web">
+  Tu crées `composants/Header.jsx` sur ton Mac, tu importes `./composants/header.jsx` dans ton code. Ça fonctionne localement (macOS ignore la casse). Tu déploies sur un serveur Linux : erreur 404 — le fichier `header.jsx` n'existe pas, seul `Header.jsx` existe. Ce genre de bug est courant et frustrant.
+</Aside>
+
+---
+
+## Anatomie d'un fichier
+
+Sous Linux, un fichier n'est pas juste son contenu. L'OS conserve un ensemble de **métadonnées** — des informations *sur* le fichier — qui permettent de l'identifier, de le protéger et de le gérer.
+
+### Le nom
+
+Le nom d'un fichier sous Linux peut contenir presque n'importe quel caractère, mais en pratique on suit des conventions :
+
+- **Pas d'espaces.** On utilise des tirets (`mon-fichier.txt`) ou des tirets bas (`mon_fichier.txt`).
+- **Pas de caractères spéciaux.** Éviter `& * ? ! @ # $` et les accents dans les noms de fichiers — ils compliquent les commandes et causent des problèmes de portabilité.
+- **La casse compte.** `index.html`, `Index.html` et `INDEX.HTML` sont trois fichiers différents sous Linux.
+- **L'extension n'est pas magique.** Sous Linux, l'extension (`.html`, `.css`, `.js`) est une convention pour les humains. Le système ne s'en sert pas pour déterminer le type du fichier — contrairement à Windows qui associe les extensions à des programmes.
+
+<Aside type="tip" title="Convention en dev web">
+  Dans un projet web, on nomme presque toujours les fichiers en minuscules avec des tirets : `mon-composant.jsx`, `reset-styles.css`, `api-utils.js`. C'est la convention la plus portable entre les systèmes.
+</Aside>
+
+### L'emplacement
+
+Chaque fichier a un emplacement unique dans l'arborescence, exprimé par son **chemin absolu** :
+
+```
+/home/labex/projet-web/css/style.css
+```
+
+Ce chemin se décompose ainsi :
+
+| Segment | Rôle |
+|---------|------|
+| `/` | La racine du système |
+| `home/` | Dossier contenant les dossiers personnels |
+| `labex/` | Ton dossier personnel |
+| `projet-web/` | Un dossier de projet |
+| `css/` | Un sous-dossier |
+| `style.css` | Le fichier |
+
+Deux fichiers peuvent avoir le même nom s'ils sont dans des dossiers différents. C'est le chemin complet qui les distingue.
+
+### Le type
+
+La commande `ls -l` affiche un caractère au tout début de chaque ligne qui indique le type :
+
+| Caractère | Type | Description |
+|-----------|------|-------------|
+| `-` | Fichier ordinaire | Un fichier contenant des données (texte, image, code…) |
+| `d` | Dossier (*directory*) | Un conteneur pour d'autres fichiers et dossiers |
+| `l` | Lien symbolique | Un raccourci vers un autre fichier ou dossier |
+
+Il existe d'autres types (fichiers spéciaux, sockets, etc.), mais ces trois sont ceux que tu rencontreras au quotidien.
+
+### La taille
+
+La taille d'un fichier est exprimée en octets. Pour la rendre lisible, on peut utiliser :
+
+```bash
+ls -lh
+```
+
+L'option `-h` (*human-readable*) convertit les tailles en Ko, Mo, Go :
+
+```
+-rw-r--r-- 1 labex labex  2.4K  mars 22 10:30 style.css
+-rw-r--r-- 1 labex labex  1.1M  mars 22 10:31 image.png
+```
+
+### Les dates
+
+Linux enregistre trois dates pour chaque fichier :
+
+| Date | Signification | Affichée par |
+|------|---------------|--------------|
+| **Modification** (*mtime*) | Dernière modification du contenu | `ls -l` (par défaut) |
+| **Accès** (*atime*) | Dernière lecture du fichier | `ls -lu` |
+| **Changement** (*ctime*) | Dernier changement des métadonnées (permissions, nom…) | `ls -lc` |
+
+En pratique, c'est la date de modification qui t'intéresse le plus souvent.
+
+---
+
+## Lire la sortie de `ls -l`
+
+Quand tu tapes `ls -l`, chaque ligne affiche une quantité dense d'information. Voici comment la décoder.
+
+### Exemple
+
+```bash
+ls -l
+```
+
+```
+drwxr-xr-x 2 labex labex 4096 mars 22 08:00 css
+-rw-r--r-- 1 labex labex  245 mars 22 10:30 index.html
+lrwxrwxrwx 1 labex labex    9 mars 22 11:00 styles -> css/style.css
+```
+
+### Décomposition
+
+Prenons la deuxième ligne :
+
+```
+-rw-r--r-- 1 labex labex 245 mars 22 10:30 index.html
+```
+
+| Segment | Valeur | Signification |
+|---------|--------|---------------|
+| Type | `-` | Fichier ordinaire |
+| Permissions propriétaire | `rw-` | Lecture + écriture |
+| Permissions groupe | `r--` | Lecture seule |
+| Permissions autres | `r--` | Lecture seule |
+| Nombre de liens | `1` | Un seul lien pointe vers ce fichier |
+| Propriétaire | `labex` | L'utilisateur qui possède le fichier |
+| Groupe | `labex` | Le groupe associé au fichier |
+| Taille | `245` | 245 octets |
+| Date | `mars 22 10:30` | Dernière modification |
+| Nom | `index.html` | Le nom du fichier |
+
+---
+
+## Les permissions
+
+Les permissions sont le mécanisme par lequel Linux contrôle **qui peut faire quoi** avec chaque fichier. 
+C'est un concept fondamental — sur un serveur web, une erreur de permission peut rendre ton site inaccessible ou, pire, exposer des données sensibles.
+
+### Les trois niveaux
+
+Chaque fichier a trois catégories d'utilisateurs :
+
+| Catégorie | Symbole | Qui ? |
+|-----------|---------|-------|
+| **Propriétaire** (*user*) | `u` | L'utilisateur qui a créé le fichier |
+| **Groupe** (*group*) | `g` | Les membres du groupe associé au fichier |
+| **Autres** (*others*) | `o` | Tous les autres utilisateurs du système |
+
+### Les trois actions
+
+Pour chaque catégorie, trois actions sont possibles :
+
+| Permission | Symbole | Sur un fichier | Sur un dossier |
+|------------|---------|----------------|----------------|
+| **Lecture** | `r` | Lire le contenu | Lister le contenu (`ls`) |
+| **Écriture** | `w` | Modifier le contenu | Créer/supprimer des fichiers dedans |
+| **Exécution** | `x` | Exécuter comme un programme | Entrer dans le dossier (`cd`) |
+
+<Aside type="caution" title="Attention aux dossiers">
+  Sans la permission `x` sur un dossier, tu ne peux pas y entrer avec `cd`, même si tu as la permission `r` pour en lister le contenu. 
+  Les deux permissions sont nécessaires pour naviguer normalement dans un dossier.
+</Aside>
+
+### Lire les permissions
+
+Les permissions s'affichent sous forme d'une chaîne de 9 caractères, divisée en trois groupes de trois :
+
+```
+rw-r--r--
+│││││││││
+│││││││└┘─ Autres :  r-- (lecture seule)
+│││││└┘─── Groupe :  r-- (lecture seule)
+│││└┘───── Proprio :  rw- (lecture + écriture)
+```
+
+Un tiret `-` signifie que la permission est absente.
+
+### Modifier les permissions avec `chmod`
+
+La commande `chmod` modifie les permissions. Elle accepte deux syntaxes.
+
+**Syntaxe symbolique** (plus lisible) :
+
+```bash
+chmod u+x script.sh        # ajouter l'exécution pour le propriétaire
+chmod g+w fichier.txt       # ajouter l'écriture pour le groupe
+chmod o-r fichier.txt       # retirer la lecture pour les autres
+chmod a+r fichier.txt       # ajouter la lecture pour tout le monde (a = all)
+```
+
+**Syntaxe numérique** (plus rapide) :
+
+Chaque permission a une valeur : `r` = 4, `w` = 2, `x` = 1. On additionne pour chaque catégorie :
+
+| Permissions | Calcul | Valeur |
+|-------------|--------|--------|
+| `rwx` | 4 + 2 + 1 | 7 |
+| `rw-` | 4 + 2 + 0 | 6 |
+| `r-x` | 4 + 0 + 1 | 5 |
+| `r--` | 4 + 0 + 0 | 4 |
+| `---` | 0 + 0 + 0 | 0 |
+
+On écrit trois chiffres : propriétaire, groupe, autres.
+
+```bash
+chmod 755 script.sh       # rwxr-xr-x
+chmod 644 index.html      # rw-r--r--
+chmod 600 config.env      # rw------- (propriétaire seul)
+```
+
+### Permissions courantes en développement web
+
+| Fichier | Permission | Numérique | Pourquoi |
+|---------|------------|-----------|----------|
+| Pages HTML, CSS, JS | `rw-r--r--` | `644` | Le serveur web doit pouvoir les lire, mais pas les modifier. |
+| Scripts exécutables | `rwxr-xr-x` | `755` | Le serveur doit pouvoir les exécuter. |
+| Fichiers de configuration (`.env`) | `rw-------` | `600` | Contiennent des mots de passe — personne d'autre ne doit les lire. |
+| Dossiers | `rwxr-xr-x` | `755` | Le serveur doit pouvoir y entrer et lister le contenu. |
+| Dossier `uploads/` | `rwxrwxr-x` | `775` | Le serveur web (groupe) doit pouvoir y écrire. |
+
+<Aside type="caution" title="Erreur courante en déploiement">
+  Tu déploies ton site et tu obtiens une **erreur 403 Forbidden**. 
+  La cause la plus fréquente : le serveur web (Apache, Nginx) n'a pas la permission de lire tes fichiers. 
+  Un `chmod 644` sur les fichiers et `chmod 755` sur les dossiers résout généralement le problème.
+</Aside>
+
+### Changer le propriétaire avec `chown`
+
+```bash
+chown utilisateur fichier.txt                # changer le propriétaire
+chown utilisateur:groupe fichier.txt         # changer le propriétaire et le groupe
+chown -R utilisateur:groupe dossier/         # récursif (dossier + contenu)
+```
+
+<Aside type="note">
+  `chown` nécessite généralement les droits administrateur (`sudo`). 
+  Sur un serveur web, on l'utilise pour s'assurer que le serveur (souvent l'utilisateur `www-data` ou `nginx`) est propriétaire des fichiers qu'il doit servir.
+</Aside>
+
+---
+
+## Les fichiers cachés
+
+Sous Linux, tout fichier ou dossier dont le nom commence par un point (`.`) est **caché**. Il n'apparaît pas avec `ls`, seulement avec `ls -a`.
+
+```bash
+ls -a
+```
+
+```
+.  ..  .git  .env  .gitignore  index.html  css/
+```
+
+Les fichiers cachés courants en développement web :
+
+| Fichier | Rôle |
+|---------|------|
+| `.git/` | Dossier de versionnement Git |
+| `.gitignore` | Liste des fichiers à exclure de Git |
+| `.env` | Variables d'environnement (clés API, mots de passe) |
+| `.vscode/` | Configuration de l'éditeur VS Code |
+| `.prettierrc` | Configuration du formateur de code |
+| `.eslintrc` | Configuration du linter JavaScript |
+| `node_modules/` | (Pas caché mais souvent dans `.gitignore`) |
+
+<Aside type="tip" title="Pourquoi cacher ces fichiers ?">
+  Ce sont des fichiers de configuration ou d'outillage. Les cacher évite de polluer la vue quand on travaille sur le contenu du projet. 
+  Ils restent accessibles — ils ne sont pas protégés, juste masqués visuellement.
+</Aside>
+
+---
+
+## Les liens symboliques
+
+Un **lien symbolique** (*symlink*) est un fichier spécial qui pointe vers un autre fichier ou dossier. 
+C'est l'équivalent d'un raccourci, mais intégré au système de fichiers — les programmes qui ouvrent le lien accèdent directement à la cible.
+
+### Créer un lien symbolique
+
+```bash
+ln -s cible nom-du-lien
+```
+
+Exemples :
+
+```bash
+ln -s css/style.css styles            # lien vers un fichier
+ln -s /var/www/html mon-site          # lien vers un dossier
+```
+
+Avec `ls -l`, un lien symbolique est identifiable par le `l` au début et la flèche `->` :
+
+```
+lrwxrwxrwx 1 labex labex 13 mars 22 11:00 styles -> css/style.css
+lrwxrwxrwx 1 labex labex 13 mars 22 11:00 mon-site -> /var/www/html
+```
+
+### Supprimer un lien symbolique
+
+```bash
+rm mon-lien
+```
+
+Supprimer un lien ne supprime **pas** la cible. Seul le raccourci est retiré.
+
+<Aside type="caution" title="Lien cassé">
+  Si la cible est supprimée ou déplacée, le lien existe encore mais pointe dans le vide. On parle de **lien cassé** (*broken symlink*). 
+  Toute tentative d'ouvrir le lien produit une erreur « No such file or directory ».
+</Aside>
+
+### Pourquoi utiliser des liens symboliques ?
+
+En développement web, les symlinks sont partout. Voici les cas d'usage les plus courants.
+
+#### `node_modules/.bin/`
+
+Quand tu installes un outil comme `eslint` ou `vite` avec npm, le binaire exécutable est installé dans `node_modules/.bin/` sous forme de lien symbolique qui pointe vers le vrai fichier dans le paquet :
+
+```
+node_modules/.bin/vite -> ../vite/bin/vite.js
+```
+
+C'est ce qui permet à `npx vite` de fonctionner sans installer l'outil globalement.
+
+#### `npm link` et développement local
+
+Si tu développes deux projets en parallèle — par exemple une bibliothèque et une application qui l'utilise — tu peux créer un lien symbolique plutôt que de publier et réinstaller à chaque changement :
+
+```bash
+cd ma-bibliotheque
+npm link                    # enregistre le paquet localement
+
+cd ../mon-application
+npm link ma-bibliotheque    # crée un symlink dans node_modules/
+```
+
+Chaque modification dans `ma-bibliotheque` est immédiatement visible dans `mon-application` sans rien réinstaller.
+
+#### Configuration de serveur web
+
+Sur un serveur Linux avec Nginx ou Apache, les sites disponibles et les sites actifs sont souvent gérés par des symlinks :
+
+```bash
+# Nginx : activer un site
+ln -s /etc/nginx/sites-available/mon-site.conf /etc/nginx/sites-enabled/
+
+# Nginx : désactiver un site
+rm /etc/nginx/sites-enabled/mon-site.conf
+```
+
+La configuration reste dans `sites-available/`. Le lien dans `sites-enabled/` dit à Nginx « ce site est actif ». 
+Pour désactiver un site, on supprime le lien — la configuration est préservée.
+
+#### Dossier partagé entre projets
+
+Si plusieurs projets utilisent les mêmes images ou les mêmes polices, un lien symbolique évite la duplication :
+
+```bash
+ln -s /home/labex/ressources-communes/images projet-a/images
+ln -s /home/labex/ressources-communes/images projet-b/images
+```
+
+Les deux projets accèdent aux mêmes fichiers. Une mise à jour dans le dossier source se reflète partout.
+
+### Lien symbolique vs lien physique
+
+Linux offre aussi des **liens physiques** (*hard links*), créés avec `ln` sans l'option `-s`. La différence est fondamentale :
+
+| | Lien symbolique (`ln -s`) | Lien physique (`ln`) |
+|---|---|---|
+| Pointe vers | Un **chemin** (nom de fichier) | Les **données** sur le disque |
+| Peut cibler un dossier | Oui | Non |
+| Peut traverser des disques | Oui | Non |
+| Si la cible est supprimée | Lien cassé | Les données restent accessibles |
+| Visible dans `ls -l` | `l` + flèche `->` | Pas de distinction visuelle |
+
+<Aside type="tip" title="En pratique">
+  Dans le développement web, on utilise presque exclusivement les liens symboliques. 
+  Les liens physiques sont utiles dans des cas spécifiques (sauvegardes, gestion de paquets), mais tu n'en auras pas besoin au quotidien.
+</Aside>

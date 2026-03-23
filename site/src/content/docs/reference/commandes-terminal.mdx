@@ -1,0 +1,456 @@
+---
+title: "Référence : commandes du terminal"
+description: "Aide-mémoire des commandes Linux essentielles avec leur équivalent Windows (PowerShell et CMD)."
+sidebar:
+  label: "Commandes du terminal"
+---
+
+import { Tabs, TabItem, Aside, Steps, Card, CardGrid } from '@astrojs/starlight/components';
+
+Ce document rassemble toutes les commandes Linux utilisées dans les activités du cours, avec leur équivalent Windows. Tu peux t'y référer à tout moment.
+
+<Aside type="tip" title="PowerShell ou CMD ?">
+  Windows offre deux terminaux : **CMD** (l'ancien invite de commandes) et **PowerShell** (le terminal moderne). PowerShell est plus proche de Linux dans sa logique. Les équivalents donnés ici couvrent les deux quand ils diffèrent.
+</Aside>
+
+---
+
+## Se repérer
+
+### `pwd` — Afficher le dossier courant
+
+Affiche le chemin complet du dossier dans lequel tu te trouves.
+
+<Tabs>
+  <TabItem label="Linux">
+    ```bash
+    pwd
+    ```
+    Résultat : `/home/labex/mon-projet`
+  </TabItem>
+  <TabItem label="Windows (PowerShell)">
+    ```powershell
+    Get-Location
+    # ou son alias :
+    pwd
+    ```
+    Résultat : `C:\Users\labex\mon-projet`
+  </TabItem>
+  <TabItem label="Windows (CMD)">
+    ```cmd
+    cd
+    ```
+    Sans argument, `cd` affiche le dossier courant dans CMD.
+  </TabItem>
+</Tabs>
+
+### `ls` — Lister le contenu d'un dossier
+
+<Tabs>
+  <TabItem label="Linux">
+    ```bash
+    ls                # contenu simple
+    ls -l             # vue détaillée (permissions, taille, date)
+    ls -a             # inclut les fichiers cachés (commençant par .)
+    ls -la            # détaillé + fichiers cachés
+    ls -R             # récursif (sous-dossiers inclus)
+    ls dossier/       # contenu d'un dossier spécifique
+    ```
+  </TabItem>
+  <TabItem label="Windows (PowerShell)">
+    ```powershell
+    Get-ChildItem             # ou son alias : ls, dir
+    Get-ChildItem -Force      # inclut les fichiers cachés (équivalent -a)
+    Get-ChildItem -Recurse    # récursif (équivalent -R)
+    ```
+  </TabItem>
+  <TabItem label="Windows (CMD)">
+    ```cmd
+    dir                # contenu détaillé
+    dir /a             # inclut les fichiers cachés
+    dir /s             # récursif
+    ```
+  </TabItem>
+</Tabs>
+
+---
+
+## Naviguer
+
+### `cd` — Changer de dossier
+
+<Tabs>
+  <TabItem label="Linux">
+    ```bash
+    cd dossier         # entrer dans un dossier
+    cd ..              # remonter au dossier parent
+    cd ~               # retourner au dossier personnel
+    cd /               # aller à la racine
+    cd ../autre        # remonter puis entrer dans "autre"
+    ```
+  </TabItem>
+  <TabItem label="Windows (PowerShell / CMD)">
+    ```powershell
+    cd dossier         # entrer dans un dossier
+    cd ..              # remonter au dossier parent
+    cd ~               # dossier personnel (PowerShell seulement)
+    cd \               # aller à la racine du disque
+    cd ..\autre        # remonter puis entrer dans "autre"
+    ```
+  </TabItem>
+</Tabs>
+
+### Chemins relatifs et absolus
+
+| Type | Linux | Windows |
+|------|-------|---------|
+| Relatif | `cd css` ou `cd ../js` | `cd css` ou `cd ..\js` |
+| Absolu | `cd /home/labex/projet` | `cd C:\Users\labex\projet` |
+| Séparateur | `/` (barre oblique) | `\` (barre oblique inversée) |
+
+<Aside type="note">
+  Sous Linux, le séparateur de chemin est toujours `/`. Sous Windows, c'est `\`. PowerShell accepte les deux, mais CMD exige `\`.
+</Aside>
+
+---
+
+## Créer
+
+### `mkdir` — Créer un dossier
+
+<Tabs>
+  <TabItem label="Linux">
+    ```bash
+    mkdir mon-dossier              # créer un dossier
+    mkdir css js images            # créer plusieurs dossiers
+    mkdir -p parent/enfant/petit   # créer toute la chaîne
+    ```
+  </TabItem>
+  <TabItem label="Windows (PowerShell)">
+    ```powershell
+    mkdir mon-dossier
+    mkdir css, js, images                     # plusieurs dossiers
+    New-Item -ItemType Directory -Path parent\enfant\petit -Force
+    ```
+  </TabItem>
+  <TabItem label="Windows (CMD)">
+    ```cmd
+    mkdir mon-dossier
+    mkdir css js images
+    mkdir parent\enfant\petit
+    ```
+    CMD crée automatiquement les dossiers intermédiaires.
+  </TabItem>
+</Tabs>
+
+### `touch` — Créer un fichier vide
+
+<Tabs>
+  <TabItem label="Linux">
+    ```bash
+    touch fichier.txt
+    touch css/style.css js/app.js
+    ```
+  </TabItem>
+  <TabItem label="Windows (PowerShell)">
+    ```powershell
+    New-Item fichier.txt
+    New-Item css\style.css, js\app.js
+    ```
+  </TabItem>
+  <TabItem label="Windows (CMD)">
+    ```cmd
+    type nul > fichier.txt
+    type nul > css\style.css
+    ```
+  </TabItem>
+</Tabs>
+
+### `echo` et redirections — Créer un fichier avec du contenu
+
+<Tabs>
+  <TabItem label="Linux">
+    ```bash
+    echo "Bonjour" > fichier.txt     # écrire (écrase le contenu)
+    echo "Encore" >> fichier.txt     # ajouter à la fin
+    ```
+  </TabItem>
+  <TabItem label="Windows (PowerShell)">
+    ```powershell
+    "Bonjour" > fichier.txt          # écrire (écrase)
+    "Encore" >> fichier.txt          # ajouter à la fin
+    ```
+  </TabItem>
+  <TabItem label="Windows (CMD)">
+    ```cmd
+    echo Bonjour > fichier.txt
+    echo Encore >> fichier.txt
+    ```
+  </TabItem>
+</Tabs>
+
+<Aside type="caution" title="Rappel : > vs >>">
+  `>` **écrase** le fichier. `>>` **ajoute** à la fin. Cette distinction est la même sous Linux et Windows.
+</Aside>
+
+---
+
+## Consulter
+
+### `cat` — Afficher tout le contenu
+
+<Tabs>
+  <TabItem label="Linux">
+    ```bash
+    cat fichier.txt
+    cat a.txt b.txt              # afficher plusieurs fichiers à la suite
+    cat a.txt b.txt > tout.txt   # combiner dans un nouveau fichier
+    ```
+  </TabItem>
+  <TabItem label="Windows (PowerShell)">
+    ```powershell
+    Get-Content fichier.txt          # ou son alias : cat
+    Get-Content a.txt, b.txt
+    Get-Content a.txt, b.txt | Set-Content tout.txt
+    ```
+  </TabItem>
+  <TabItem label="Windows (CMD)">
+    ```cmd
+    type fichier.txt
+    type a.txt b.txt
+    copy a.txt + b.txt tout.txt
+    ```
+  </TabItem>
+</Tabs>
+
+### `less` — Parcourir page par page
+
+<Tabs>
+  <TabItem label="Linux">
+    ```bash
+    less fichier.txt
+    ```
+    Navigation : espace (page suivante), `b` (page précédente), `q` (quitter).
+  </TabItem>
+  <TabItem label="Windows (PowerShell)">
+    ```powershell
+    Get-Content fichier.txt | Out-Host -Paging
+    # ou, si less est installé via Git Bash :
+    less fichier.txt
+    ```
+  </TabItem>
+  <TabItem label="Windows (CMD)">
+    ```cmd
+    more fichier.txt
+    ```
+    `more` est la version Windows de `less`, mais avec moins de fonctionnalités.
+  </TabItem>
+</Tabs>
+
+### `head` — Voir le début
+
+<Tabs>
+  <TabItem label="Linux">
+    ```bash
+    head fichier.txt           # 10 premières lignes
+    head -n 5 fichier.txt      # 5 premières lignes
+    ```
+  </TabItem>
+  <TabItem label="Windows (PowerShell)">
+    ```powershell
+    Get-Content fichier.txt -TotalCount 10     # 10 premières lignes
+    Get-Content fichier.txt -TotalCount 5      # 5 premières lignes
+    ```
+  </TabItem>
+  <TabItem label="Windows (CMD)">
+    CMD n'a pas d'équivalent direct simple.
+  </TabItem>
+</Tabs>
+
+### `tail` — Voir la fin
+
+<Tabs>
+  <TabItem label="Linux">
+    ```bash
+    tail fichier.txt           # 10 dernières lignes
+    tail -n 3 fichier.txt      # 3 dernières lignes
+    ```
+  </TabItem>
+  <TabItem label="Windows (PowerShell)">
+    ```powershell
+    Get-Content fichier.txt -Tail 10     # 10 dernières lignes
+    Get-Content fichier.txt -Tail 3      # 3 dernières lignes
+    ```
+  </TabItem>
+  <TabItem label="Windows (CMD)">
+    CMD n'a pas d'équivalent direct simple.
+  </TabItem>
+</Tabs>
+
+---
+
+## Copier et déplacer
+
+### `cp` — Copier
+
+<Tabs>
+  <TabItem label="Linux">
+    ```bash
+    cp fichier.txt copie.txt         # copier un fichier
+    cp fichier.txt dossier/          # copier dans un dossier
+    cp -r dossier/ copie-dossier/    # copier un dossier entier
+    ```
+  </TabItem>
+  <TabItem label="Windows (PowerShell)">
+    ```powershell
+    Copy-Item fichier.txt copie.txt             # ou alias : cp
+    Copy-Item fichier.txt dossier\
+    Copy-Item -Recurse dossier\ copie-dossier\
+    ```
+  </TabItem>
+  <TabItem label="Windows (CMD)">
+    ```cmd
+    copy fichier.txt copie.txt
+    copy fichier.txt dossier\
+    xcopy /e dossier\ copie-dossier\
+    ```
+  </TabItem>
+</Tabs>
+
+### `mv` — Déplacer ou renommer
+
+<Tabs>
+  <TabItem label="Linux">
+    ```bash
+    mv ancien.txt nouveau.txt       # renommer
+    mv fichier.txt dossier/         # déplacer
+    ```
+  </TabItem>
+  <TabItem label="Windows (PowerShell)">
+    ```powershell
+    Move-Item ancien.txt nouveau.txt       # ou alias : mv
+    Move-Item fichier.txt dossier\
+    ```
+  </TabItem>
+  <TabItem label="Windows (CMD)">
+    ```cmd
+    ren ancien.txt nouveau.txt       # renommer
+    move fichier.txt dossier\        # déplacer
+    ```
+    Sous CMD, renommer et déplacer sont deux commandes distinctes.
+  </TabItem>
+</Tabs>
+
+---
+
+## Supprimer
+
+### `rm` — Supprimer un fichier
+
+<Tabs>
+  <TabItem label="Linux">
+    ```bash
+    rm fichier.txt             # supprimer un fichier
+    rm -r dossier/             # supprimer un dossier et son contenu
+    ```
+  </TabItem>
+  <TabItem label="Windows (PowerShell)">
+    ```powershell
+    Remove-Item fichier.txt                 # ou alias : rm, del
+    Remove-Item -Recurse dossier\
+    ```
+  </TabItem>
+  <TabItem label="Windows (CMD)">
+    ```cmd
+    del fichier.txt
+    rmdir /s dossier
+    ```
+  </TabItem>
+</Tabs>
+
+### `rmdir` — Supprimer un dossier vide
+
+<Tabs>
+  <TabItem label="Linux">
+    ```bash
+    rmdir dossier-vide
+    ```
+    Échoue si le dossier contient des fichiers.
+  </TabItem>
+  <TabItem label="Windows (PowerShell / CMD)">
+    ```powershell
+    rmdir dossier-vide
+    ```
+    Même comportement : échoue si le dossier n'est pas vide.
+  </TabItem>
+</Tabs>
+
+<Aside type="caution" title="Pas de corbeille">
+  Sous Linux comme sous Windows en ligne de commande, la suppression est **définitive**. Les fichiers supprimés avec `rm` ou `del` ne passent pas par la corbeille.
+</Aside>
+
+---
+
+## Utilitaires
+
+### `history` — Historique des commandes
+
+<Tabs>
+  <TabItem label="Linux">
+    ```bash
+    history                         # afficher l'historique
+    history > mes-commandes.txt     # sauvegarder dans un fichier
+    ```
+  </TabItem>
+  <TabItem label="Windows (PowerShell)">
+    ```powershell
+    Get-History                                  # afficher l'historique
+    Get-History | Out-File mes-commandes.txt     # sauvegarder
+    ```
+  </TabItem>
+  <TabItem label="Windows (CMD)">
+    ```cmd
+    doskey /history
+    ```
+  </TabItem>
+</Tabs>
+
+### `clear` — Effacer le terminal
+
+<Tabs>
+  <TabItem label="Linux">
+    ```bash
+    clear
+    ```
+  </TabItem>
+  <TabItem label="Windows (PowerShell / CMD)">
+    ```powershell
+    cls
+    ```
+  </TabItem>
+</Tabs>
+
+---
+
+## Aide-mémoire rapide
+
+| Action | Linux | PowerShell | CMD |
+|--------|-------|------------|-----|
+| Où suis-je ? | `pwd` | `pwd` | `cd` |
+| Lister | `ls` | `ls` | `dir` |
+| Entrer dans un dossier | `cd dossier` | `cd dossier` | `cd dossier` |
+| Remonter | `cd ..` | `cd ..` | `cd ..` |
+| Créer un dossier | `mkdir nom` | `mkdir nom` | `mkdir nom` |
+| Créer un fichier vide | `touch nom` | `New-Item nom` | `type nul > nom` |
+| Écrire dans un fichier | `echo "x" > f` | `"x" > f` | `echo x > f` |
+| Ajouter à un fichier | `echo "x" >> f` | `"x" >> f` | `echo x >> f` |
+| Voir le contenu | `cat f` | `cat f` | `type f` |
+| Parcourir | `less f` | `Out-Host -Paging` | `more f` |
+| Début du fichier | `head -n 5 f` | `-TotalCount 5` | — |
+| Fin du fichier | `tail -n 5 f` | `-Tail 5` | — |
+| Copier | `cp a b` | `cp a b` | `copy a b` |
+| Déplacer/renommer | `mv a b` | `mv a b` | `move a b` / `ren a b` |
+| Supprimer fichier | `rm f` | `rm f` | `del f` |
+| Supprimer dossier | `rm -r d` | `rm -Recurse d` | `rmdir /s d` |
+| Historique | `history` | `Get-History` | `doskey /history` |
+| Effacer terminal | `clear` | `cls` | `cls` |
