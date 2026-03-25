@@ -19,13 +19,13 @@ export default defineConfig({
 				'./src/styles/custom.css',
 			],
 			sidebar: [
-				// {
-				// 	label: 'Notes de cours',
-				// 	items: [
-				// 		// { label: 'Introduction', slug: 'cours/01-introduction' },
-				// 		{ label: 'Fichiers', slug: 'cours/03-fichiers' }
-				// 	]
-				// },
+				{
+					label: 'Notes de cours',
+					items: [
+						{ label: 'Introduction', slug: 'cours/01-introduction' },
+						// { label: 'Fichiers', slug: 'cours/02-fichiers' }
+					]
+				},
 				{
 					label: 'Activités',
 					items: [

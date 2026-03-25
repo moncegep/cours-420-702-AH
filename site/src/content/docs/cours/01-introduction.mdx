@@ -12,13 +12,6 @@ Chaque fois que vous visitez un site web, une chaîne invisible se met en marche
 
 Ce premier bloc pose les bases : qu'est-ce qu'un système d'exploitation, comment un ordinateur est organisé, et pourquoi Linux est l'environnement de référence pour le développement web.
 
-<Aside type="tip" title="Compétences visées">
-  - Expliquer le rôle d'un système d'exploitation dans le fonctionnement d'un ordinateur
-  - Identifier les ressources principales d'un système informatique
-  - Situer Linux dans l'écosystème du développement web
-  - Naviguer dans l'environnement LabEx
-</Aside>
-
 ---
 
 ## Qu'est-ce qu'un système ?
@@ -34,7 +27,7 @@ Avant de parler de système d'exploitation, clarifions la notion de **système**
   </Card>
 </CardGrid>
 
-Un **système informatique** est composé de trois couches qui travaillent ensemble :
+Un **système informatique** peut être décomposé en trois couches qui communiquent les unes avec les autres :
 
 | Couche | Rôle | Exemples |
 |---|---|---|
@@ -42,7 +35,7 @@ Un **système informatique** est composé de trois couches qui travaillent ensem
 | **Système d'exploitation** | Gérer le matériel et offrir des services aux applications | Linux, Windows, macOS, Android |
 | **Applications** | Répondre aux besoins de l'utilisateur | Navigateur, éditeur de code, serveur web |
 
-<Aside type="note" title="Analogie">
+<Aside type="note" title="Analogie du restaurant">
   Pensez à un restaurant : le **matériel**, c'est la cuisine (fours, réfrigérateurs, ustensiles). Le **système d'exploitation**, c'est le chef de cuisine qui coordonne les ressources. Les **applications**, ce sont les plats commandés par les clients.
 </Aside>
 
@@ -167,13 +160,13 @@ Pour comprendre où Linux se situe dans l'écosystème web, voici une pile (*sta
 
 | Couche | Composant | Rôle |
 |---|---|---|
-| **Système d'exploitation** | Linux (Ubuntu) | Gère le matériel et les processus |
+| **Système d'exploitation** | Linux (ex: Ubuntu) | Gère le matériel et les processus |
 | **Serveur web** | Nginx ou Apache | Reçoit les requêtes HTTP et les distribue |
 | **Environnement d'exécution** | Node.js, Python, PHP | Exécute le code de l'application |
 | **Base de données** | PostgreSQL, MongoDB | Stocke les données de l'application |
 
 <Aside type="tip" title="Tout au long du programme">
-  Dans vos cours de développement web, vous allez installer et configurer chacune de ces couches. Ce cours vous donne les fondations : comprendre et maîtriser la couche du bas — le système d'exploitation.
+  Dans vos cours de développement web, vous allez installer et configurer chacune de ces couches. Ce cours vous donne les fondations : comprendre et maîtriser la couche du bas: le système d'exploitation.
 </Aside>
 
 ---
@@ -215,64 +208,6 @@ uptime
 <Aside type="caution" title="Attention à la casse">
   Linux fait la distinction entre les majuscules et les minuscules. `Date` et `date` sont deux choses différentes — seule la seconde est une commande valide. C'est une différence fondamentale avec Windows.
 </Aside>
-
----
-
-## Exercice — Exploration du système
-
-<Tabs>
-  <TabItem label="Énoncé">
-    Dans l'environnement LabEx, répondez aux questions suivantes en utilisant les commandes appropriées.
-
-    <Steps>
-    1. Quel est votre nom d'utilisateur sur ce système ?
-    2. Dans quel répertoire vous trouvez-vous à l'ouverture du terminal ?
-    3. Quel est le nom complet du système d'exploitation (nom et version du noyau) ?
-    4. Quelle est la date et l'heure actuelles du système ?
-    5. Depuis combien de temps le système est-il en fonction ?
-    6. Affichez le message `Je suis prêt pour le développement web !` dans le terminal
-    </Steps>
-  </TabItem>
-
-  <TabItem label="Indices">
-    - Les commandes nécessaires ont toutes été présentées plus haut dans cette page
-    - Pour la question 3, cherchez parmi les commandes qui donnent des informations sur le système
-    - Pour la question 6, quelle commande permet d'afficher du texte ?
-
-    <Aside type="tip" title="Astuce générale">
-      Si vous ne vous souvenez plus d'une commande, relisez la section « Premières commandes à essayer ». En situation réelle, un développeur consulte constamment la documentation — c'est normal et souhaitable.
-    </Aside>
-  </TabItem>
-
-  <TabItem label="Validation">
-    Voici les commandes attendues :
-
-    ```bash
-    # 1. Nom d'utilisateur
-    whoami
-    # → labex (ou le nom configuré dans votre environnement)
-
-    # 2. Répertoire courant
-    pwd
-    # → /home/labex
-
-    # 3. Système d'exploitation
-    uname -a
-    # → Linux ... Ubuntu ... (la sortie exacte varie)
-
-    # 4. Date et heure
-    date
-    # → mar 16 mar 2026 ... (la sortie dépend du moment)
-
-    # 5. Temps de fonctionnement
-    uptime
-    # → ... up X min, ...
-
-    # 6. Afficher un message
-    echo "Je suis prêt pour le développement web !"
-    ```
-  </TabItem>
-</Tabs>
 
 ---
 
@@ -326,18 +261,6 @@ export const quizBloc1 = [
     ],
     correct: "Le système d'exploitation (Linux)",
     explanation: "Le SE est la fondation de la pile. Sans lui, aucune des autres couches (serveur web, environnement d'exécution, base de données) ne pourrait fonctionner. C'est pourquoi ce cours est un prérequis essentiel pour vos cours de développement."
-  },
-  {
-    id: 'q5',
-    question: "La commande `uname -a` sert à :",
-    options: [
-      "Afficher le nom de l'utilisateur connecté",
-      "Afficher des informations sur le système d'exploitation",
-      "Créer un nouveau fichier",
-      "Afficher le répertoire courant"
-    ],
-    correct: "Afficher des informations sur le système d'exploitation",
-    explanation: "La commande `uname` affiche des informations sur le système. L'option `-a` (pour « all ») affiche toutes les informations disponibles : nom du noyau, version, architecture, etc. Pour le nom d'utilisateur, c'est `whoami` ; pour le répertoire, c'est `pwd`."
   }
 ];
 
@@ -360,6 +283,6 @@ import QuizClassification from '../../../components/QuizClassification';
     Linux domine les serveurs web. L'apprendre, c'est maîtriser l'environnement où vos applications seront déployées.
   </Card>
   <Card title="LabEx" icon="laptop">
-    Environnement Linux en ligne pour pratiquer sans installation. On y reviendra avec VirtualBox à la semaine 5.
+    Environnement Linux en ligne pour pratiquer sans installation.
   </Card>
 </CardGrid>
