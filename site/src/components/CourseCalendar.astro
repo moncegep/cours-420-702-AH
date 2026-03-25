@@ -63,7 +63,7 @@ const hasTopic = (week: Week): boolean => week.topics.length > 0;
                             <div class:list={["week-row", { current: isCurrent, past: isPast, break: week.isBreak, }]}>
                                 <div class="week-number">
                                     {isCurrent && <span class="current-dot" />}
-                                    <span class="num">S{week.number}</span>
+                                    <span class="num">Séance {week.number}</span>
                                     <span class="date">{week.date}</span>
                                 </div>
                                 <div class="week-content">

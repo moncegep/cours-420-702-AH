@@ -1,16 +1,14 @@
 ---
-title: "Activité 1 : Prise en main de Linux et de la ligne de commande"
+title: "Prise en main de la ligne de commande (dans Linux)"
 description: "Découvrir les commandes de base du terminal Linux : navigation, création de fichiers et dossiers, chemins relatifs et absolus."
+sidebar:
+  label: "Linux et ligne de commande"
 ---
 
 import { Tabs, TabItem, Aside, Steps, Card, CardGrid } from '@astrojs/starlight/components';
 
-## Contexte
-
 Dans cette activité, tu vas découvrir les actions de base en ligne de commande dans un environnement Linux. 
 L'objectif est de te rendre plus à l'aise avec le terminal, la navigation dans les dossiers, la manipulation de fichiers et l'observation de l'arborescence d'un projet.
-
-L'activité se fait dans **LabEx**.
 
 ## Objectifs d'apprentissage
 
@@ -24,30 +22,43 @@ L'activité se fait dans **LabEx**.
 - te déplacer dans l'arborescence avec des chemins relatifs et absolus ;
 - faire le lien entre ces manipulations et l'organisation d'un projet de développement web.
 
-## Rappel rapide : environnement Linux
+## Rappel : environnement Linux
 
-Un système Linux organise les fichiers dans une **arborescence** de dossiers. 
-Tout part d'une racine appelée `/`.
+Un système Linux organise les fichiers dans une **arborescence** de dossiers (comme un arbre inversé).
+Tout part d'un point central appelé la racine, représenté par `/`.
 
-| Symbole | Signification |
-|---------|---------------|
-| `/`     | La racine du système |
-| `~`     | Ton dossier personnel |
-| `.`     | Le dossier courant |
-| `..`    | Le dossier parent |
+| Symbole | Signification | Explication   |
+|---------|---------------|---------------|
+| `/`     | La racine du système | C'est le point de départ de toute l'arborescence. Tous les dossiers et fichiers du système se trouvent quelque part à partir d'ici. |
+| `~`     | Ton dossier personnel | C'est le dossier associé à ton utilisateur. Tu peux y créer, modifier et organiser tes fichiers sans affecter les autres parties du système. | 
+| `.`     | Le dossier courant | Représente le dossier dans lequel tu te trouves actuellement dans le terminal. Certaines commandes l'utilisent pour indiquer "ici".  |
+| `..`    | Le dossier parent | Représente le dossier situé un niveau au-dessus dans l'arborescence. Permet de remonter d'un niveau. |
 
 Dans le terminal, tu tapes une commande, tu appuies sur Entrée, et le système exécute l'action demandée.
 
-## Commandes à connaître
+<Aside type='note' title="Qu'est-ce qu'un utilisateur ?">
+Un **utilisateur** est une identité reconnue par le système d'exploitation pour permettre l'accès à la machine et à ses ressources.
+Chaque utilisateur possède généralement un **nom**, des **droits (permissions)** et un **dossier personnel**.
 
-### `echo`
+Cette notion est **différente de l'utilisateur d'une application web** (comme un compte Instagram ou Moodle).
+Un utilisateur du système d'exploitation sert à **gérer l'accès à l'ordinateur lui-même**.
 
-Affiche du texte dans le terminal.
+**Exemple :** le compte que tu as créé lors de la première configuration de Windows (compte local ou compte Microsoft) est un utilisateur du système.
+</Aside>
+
+### La commande `echo`
+
+La commande `echo` affiche du texte dans le terminal.
 
 ```bash
 echo Bonjour
 echo "Bienvenue dans Linux"
 ```
+
+<Aside type='note' title='Pourquoi utilise-t-on des guillemets avec echo ?'>
+On utilise des guillemets pour indiquer au shell que tout ce qui est à l'intérieur doit être traité comme un seul bloc de texte.
+Les guillemets permettent d'éviter certaines interprétations du shell et écrire du texte contenant des caractères spéciaux.
+</Aside>
 
 Combiné avec `>`, `echo` peut aussi écrire du contenu dans un fichier :
 
@@ -55,73 +66,103 @@ Combiné avec `>`, `echo` peut aussi écrire du contenu dans un fichier :
 echo "<h1>Bonjour</h1>" > index.html
 ```
 
-### `cat`
+<Aside type='danger' title='Conséquence de >'>
+Si le fichier existe déjà, son contenu est **remplacé**. Pour ajouter du contenu sans écraser, on utilise `>>` :
+```bash
+echo "<p>Suite</p>" >> index.html
+```
+Ceci ajoutera le contenu à la fin du fichier.
+</Aside>
 
-Affiche le contenu d'un fichier dans le terminal.
+### La commande `cat`
+
+La commande `cat` affiche le contenu d'un fichier dans le terminal. C'est le moyen le plus simple de vérifier ce qu'un fichier contient.
 
 ```bash
 cat index.html
 ```
 
-### `ls`
-
-Affiche le contenu d'un dossier.
-
-```bash
-ls          # contenu simple
-ls -l       # vue détaillée (permissions, taille, date)
-ls -a       # inclut les fichiers cachés
-ls -la      # vue détaillée complète
-ls dossier  # contenu d'un dossier spécifique
-```
-
-### Création de dossiers et fichiers
-
-```bash
-mkdir nom_du_dossier       # créer un dossier
-mkdir css js images        # créer plusieurs dossiers
-touch index.html           # créer un fichier vide
-touch css/style.css        # créer un fichier dans un sous-dossier
-```
-
-### Suppression
-
-```bash
-rm fichier.txt      # supprimer un fichier
-rmdir dossier       # supprimer un dossier vide
-rm -r dossier       # supprimer un dossier et tout son contenu
-```
-
-<Aside type="caution" title="Suppression irréversible">
-  La suppression en ligne de commande est immédiate. Il n'y a pas de corbeille.
-</Aside>
-
 ### Navigation
 
+Dans le terminal, naviguer signifie se déplacer dans l'arborescence des dossiers.
+
 ```bash
-pwd                  # afficher le dossier courant
+pwd                  # afficher le dossier courant (où tu te trouves)
 cd nom_du_dossier    # entrer dans un dossier
 cd ..                # remonter au dossier parent
 cd ~                 # retourner au dossier personnel
 cd /                 # aller à la racine
 ```
 
-### Chemins relatifs et absolus
+### Observer sa position et se repérer
 
-Un **chemin relatif** est exprimé par rapport au dossier courant :
+Avant de se déplacer, il est souvent utile de vérifier où l'on se trouve et ce que contient le dossier courant.
+
+```bash
+pwd        # affiche le chemin complet du dossier courant
+ls         # affiche le contenu du dossier courant
+ls -l      # affiche les détails (droits, taille, date…)
+ls -a      # affiche aussi les fichiers cachés
+ls -R      # affiche le contenu récursivement (sous-dossiers inclus)
+```
+
+Ces commandes permettent de se situer dans l'arborescence avant de naviguer.
+
+### Chemins
+
+Pour se déplacer, on doit indiquer un chemin.
+Un chemin (*path*) est une suite de dossiers qui permet d'indiquer l'emplacement d'un fichier ou d'un dossier dans l'arborescence du système.
+Un chemin peut mener vers :
+- un dossier
+- un fichier
+- une ressource à manipuler (ouvrir, modifier, supprimer, exécuter…)
+
+**Exemple :**
+
+```bash
+/home/etudiant/cours/os/notes.txt
+```
+
+Cela veut dire :
+
+- `/` → racine du système
+- `home` → dossier dans la racine
+- `etudiant` → sous-dossier (dans `home`)
+- `cours` → sous-dossier (dans `etudiant`)
+- `os` → sous-dossier (dans `cours`)
+- `notes.txt` → fichier (dans `os`)
+
+<Aside type='caution' title='À quoi sert concrètement un chemin ?'>
+Le chemin ne contient pas directement le fichier.
+Il sert à retrouver le fichier dans l'organisation du système de fichiers.
+
+C'est ensuite le système d'exploitation qui gère :
+
+- l'accès réel au stockage
+- le chargement éventuel du contenu
+- la coordination avec les programmes
+</Aside>
+
+#### Chemin relatif
+
+Un **chemin relatif** est exprimé **par rapport au dossier courant**.
 
 ```bash
 cd css            # entrer dans le sous-dossier css
 cd ../js          # remonter d'un niveau, puis entrer dans js
 ```
 
-Un **chemin absolu** commence toujours par `/` et décrit le chemin complet depuis la racine :
+> Il est souvent **plus court et plus rapide à écrire** quand on travaille déjà dans la bonne zone.
+
+#### Chemin absolu
+
+Un **chemin absolu** commence toujours par `/` et décrit l'emplacement (chemin) complet depuis la racine du système.
 
 ```bash
 cd /home/labex/mon-site/js
 ```
 
-Le chemin relatif est plus court quand tu travailles déjà dans le bon dossier. Le chemin absolu fonctionne peu importe où tu te trouves.
+> Il fonctionne **peu importe l'endroit où tu te trouves**.
 
 <Aside type="tip" title="Particularités Windows">
   Sur Windows, un **chemin absolu ne commence généralement pas par `/`**, 
@@ -140,13 +181,51 @@ Le chemin relatif est plus court quand tu travailles déjà dans le bon dossier.
   On appelle ça un **chemin UNC** — il est aussi absolu car il décrit un emplacement complet.
 </Aside>
 
+### Création de dossiers et fichiers
+
+On peut créer des dossiers et des fichiers directement depuis le terminal.
+
+```bash
+mkdir nom_du_dossier       # créer un dossier
+mkdir css js images        # créer plusieurs dossiers
+```
+
+<Aside type='tip' title='Dossier parent absent'>
+Si un dossier parent n'existe pas, on peut utiliser :
+```bash
+mkdir -p projet/css
+```
+Cela crée automatiquement les dossiers nécessaires.
+</Aside>
+
+Pour créer un fichier vide, on utilise souvent :
+
+```bash
+touch index.html           # créer un fichier vide
+touch css/style.css        # créer un fichier dans un sous-dossier (existant)
+```
+
+### Suppression de dossiers et fichiers
+
+```bash
+rm fichier.txt      # supprimer un fichier
+rmdir dossier       # supprimer un dossier vide
+rm -r dossier       # supprimer un dossier et tout son contenu
+```
+
+L'option `-r` signifie récursif : le système parcourt tous les sous-dossiers.
+
+<Aside type="caution" title="Suppression irréversible">
+  La suppression en ligne de commande est immédiate. Il n'y a pas de corbeille.
+</Aside>
+
 ---
 
 ## Partie 1 : Découvrir l'environnement et les commandes de base
 
-### 1 Explorer son environnement
+### 1. Explorer son environnement
 
-Ouvre ton environnement LabEx et repère la zone du terminal et ton dossier de travail.
+Ouvre ton environnement et repère la zone du terminal et ton dossier de travail.
 
 Exécute :
 
@@ -161,7 +240,7 @@ ls -a
   2. Compare les résultats de `ls` et `ls -a`. Quels éléments supplémentaires apparaissent ? Quel point commun ont-ils dans leur nom ?
 </Aside>
 
-### 2 Écrire du texte et créer du contenu
+### 2. Écrire du texte et créer du contenu
 
 Exécute les commandes suivantes et observe la différence :
 
@@ -182,7 +261,7 @@ rm bienvenue.html
   Quelle est la différence entre `echo "texte"` et `echo "texte" > fichier` ?
 </Aside>
 
-### 3 Créer et organiser des dossiers et fichiers
+### 3. Créer et organiser des dossiers et fichiers
 
 Crée un petit espace de travail temporaire :
 
@@ -200,7 +279,7 @@ ls -R
   Que fait la commande `ls -R` ? En quoi est-elle utile pour vérifier la structure d'un projet ?
 </Aside>
 
-### 4 Naviguer avec des chemins relatifs et absolus
+### 4. Naviguer avec des chemins relatifs et absolus
 
 Depuis le dossier `labo-test`, explore la navigation :
 
@@ -232,7 +311,7 @@ cd /home/labex/labo-test
   3. Lequel des deux fonctionnerait peu importe le dossier dans lequel tu te trouves ?
 </Aside>
 
-### 5 Supprimer des fichiers et des dossiers
+### 5. Supprimer des fichiers et des dossiers
 
 Toujours dans `labo-test`, pratique la suppression :
 
@@ -267,11 +346,10 @@ rm -r erreur-test
 
 ---
 
-## Partie 2 : Créer un portfolio
+## Partie 2 : Créer la structure d'un portfolio
 
-### Objectif
-
-Reproduis la structure suivante dans un dossier nommé `portfolio` :
+En utilisant uniquement le terminal (pas l'explorateur de fichiers), 
+reproduis la structure suivante dans un dossier nommé `portfolio` :
 
 ```
 portfolio/
@@ -283,23 +361,65 @@ portfolio/
 └── images/
 ```
 
-### Contraintes
+- Les fichiers `index.html`, `style.css` et `script.js` doivent contenir au moins
+une ligne de contenu pertinent (utilise `echo >`). 
+- Vérifie le contenu de chaque fichier avec `cat`.
 
-- Utilise uniquement le terminal (pas l'explorateur de fichiers).
-- Les fichiers `index.html`, `style.css` et `script.js` doivent contenir au moins une ligne de contenu pertinent.
-- Vérifie chaque étape avec `ls`, `ls -R` et `cat`.
+<Aside type="note" title="Question">
+  Peut-on créer toute la structure sans utiliser `cd` ?
+</Aside>
 
 ### Trace des commandes
 
 <Aside type="caution" title="Important">
-  **Conserve une trace de toutes les commandes que tu exécutes pour réaliser ce défi.** Tu peux copier-coller chaque commande dans un fichier texte au fur et à mesure, ou utiliser la commande `history` une fois le défi terminé :
+  **Conserve une trace de toutes les commandes que tu exécutes pour réaliser ce défi.** 
+  Tu peux copier-coller chaque commande dans un fichier texte au fur et à mesure, ou utiliser la commande `history` une fois le défi terminé :
 
   ```bash
   history > mes-commandes.txt
   ```
 </Aside>
 
-### Analyse : vers l'automatisation
+### Bonus : et si on automatisait tout ça ?
 
-Une fois l'exercice complété, relis ta trace de commandes et essaie de trouver une séquence 
-qui permettrait d'automatiser ces actions.
+Relis ta trace de commandes. Tu as probablement tapé une dizaine de commandes pour créer la structure du portfolio. Si tu devais recommencer demain pour un autre projet, il faudrait tout retaper.
+
+Et si Linux pouvait exécuter toutes ces commandes d'un coup ?
+
+C'est exactement ce que fait un **script Bash** — un fichier texte contenant une suite de commandes. Voici à quoi ressemblerait un script qui crée automatiquement la structure du portfolio :
+
+```bash
+#!/bin/bash
+
+mkdir -p portfolio/css portfolio/js portfolio/images
+
+echo '<html><head><title>Portfolio</title></head></html>' > portfolio/index.html
+echo 'body { margin: 0; font-family: sans-serif; }' > portfolio/css/style.css
+echo 'console.log("Portfolio chargé");' > portfolio/js/script.js
+
+echo "Structure créée :"
+ls -R portfolio
+```
+
+<Steps>
+1. **`#!/bin/bash`** — Cette ligne spéciale (appelée *shebang*) indique au système d'utiliser Bash pour exécuter ce fichier. 
+Elle doit toujours être la première ligne d'un script.
+
+2. **`mkdir -p`** — Crée tous les dossiers d'un coup. L'option `-p` crée aussi les dossiers parents si nécessaire : `portfolio/` est créé automatiquement en même temps que ses sous-dossiers.
+
+3. **`echo > index.html`** — Crée le fichier `index.html` avec une ligne de contenu HTML.
+
+4. **`echo > style.css`** — Crée le fichier `style.css` avec une règle CSS de base.
+
+5. **`echo > script.js`** — Crée le fichier `script.js` avec une instruction JavaScript.
+
+6. **`echo "Structure créée :"`** — Affiche un message de confirmation dans le terminal.
+
+7. **`ls -R portfolio`** — Affiche l'arborescence complète pour vérifier que tout a été créé correctement.
+</Steps>
+
+<Aside type="tip" title="Observe bien">
+  Ce sont exactement les mêmes commandes que tu as tapées une par une. 
+  La seule différence : elles sont regroupées dans un fichier qu'on peut exécuter d'un seul coup. 
+  On verra dans une prochaine activité comment créer et exécuter ce type de fichier.
+</Aside>

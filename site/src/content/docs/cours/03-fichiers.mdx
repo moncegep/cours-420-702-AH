@@ -69,6 +69,25 @@ Le nom d'un fichier sous Linux peut contenir presque n'importe quel caractère, 
   Dans un projet web, on nomme presque toujours les fichiers en minuscules avec des tirets : `mon-composant.jsx`, `reset-styles.css`, `api-utils.js`. C'est la convention la plus portable entre les systèmes.
 </Aside>
 
+#### Fichier et dossier dans Linux
+
+Dans Linux (et plus largement dans les systèmes Unix), un dossier est lui-même un type particulier de fichier.
+
+Pour le système de fichiers, il n’existe pas une séparation fondamentale entre “fichier” et “dossier” :
+ce sont simplement des objets ayant des rôles différents dans l’organisation des données.
+
+Techniquement, le système manipule des structures appelées **inodes**, qui contiennent les métadonnées d’une ressource (type, droits, taille, emplacement sur le disque, etc.).
+
+Un inode peut représenter :
+
+- un fichier régulier
+- un dossier (directory)
+- un lien symbolique
+- un périphérique
+- etc.
+
+Un dossier est donc essentiellement un **fichier spécial qui contient une liste de noms et de références vers d’autres ressources**.
+
 ### L'emplacement
 
 Chaque fichier a un emplacement unique dans l'arborescence, exprimé par son **chemin absolu** :

@@ -19,18 +19,18 @@ export default defineConfig({
 				'./src/styles/custom.css',
 			],
 			sidebar: [
-				{
-					label: 'Notes de cours',
-					items: [
-						// { label: 'Introduction', slug: 'cours/01-introduction' },
-						{ label: 'Fichiers', slug: 'cours/03-fichiers' }
-					]
-				},
+				// {
+				// 	label: 'Notes de cours',
+				// 	items: [
+				// 		// { label: 'Introduction', slug: 'cours/01-introduction' },
+				// 		{ label: 'Fichiers', slug: 'cours/03-fichiers' }
+				// 	]
+				// },
 				{
 					label: 'Activités',
 					items: [
 						{ label: 'Linux et ligne de commande', slug: 'activites/01-terminal' },
-						{ label: 'Fichiers et logs', slug: 'activites/02-fichiers-et-logs' }
+						// { label: 'Fichiers et logs', slug: 'activites/02-fichiers-et-logs' }
 					],
 				},
 				{
