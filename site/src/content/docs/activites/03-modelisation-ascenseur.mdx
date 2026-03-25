@@ -1,0 +1,311 @@
+---
+title: "L'ascenseur, un système d'exploitation en miniature"
+description: "Concevoir la logique de gestion d'un ascenseur pour comprendre les rôles fondamentaux d'un système d'exploitation et ses parallèles avec un serveur web."
+sidebar:
+  label: "L'ascenseur et l'OS"
+---
+
+import { Aside, Steps, Tabs, TabItem, Card, CardGrid } from '@astrojs/starlight/components';
+
+## Mise en contexte
+
+Imagine un édifice de 15 étages avec 2 ascenseurs. À l'heure de pointe du matin, des dizaines de personnes appuient sur les boutons d'appel à différents étages, montent, descendent, sortent — le tout en même temps. Quelqu'un doit coordonner tout ça.
+
+Ce « quelqu'un », c'est un **système de gestion** — et il fait exactement le même travail qu'un **système d'exploitation** : recevoir des demandes, gérer des ressources limitées, décider qui passe en premier, et garder une trace de tout ce qui se passe.
+
+<Aside type="tip">
+Dans cette activité, tu ne programmes rien. Tu **conçois** la logique d'un système de gestion d'ascenseur, puis tu identifies les parallèles avec le fonctionnement d'un serveur web.
+</Aside>
+
+## Objectifs
+
+À la fin de cette activité, tu devrais être capable de :
+
+- identifier les ressources qu'un système d'exploitation doit gérer ;
+- expliquer comment un OS priorise et ordonne les demandes ;
+- décrire le rôle de la journalisation (logging) dans un système ;
+- faire le lien entre ces concepts et la gestion de requêtes sur un serveur web.
+
+---
+
+## Partie 1 : Identifier les ressources
+
+Un système d'exploitation gère des **ressources** : le processeur, la mémoire, le stockage, les périphériques. Ton ascenseur a aussi des ressources à gérer.
+
+Dresse la liste des **ressources physiques et logiques** que ton système d'ascenseur doit surveiller.
+
+<Aside type="note" title="Questions pour guider ta réflexion">
+- Quels sont les éléments physiques que le système contrôle ? (Pense à ce qui bouge, s'ouvre, s'allume…)
+- Quelles sont les informations que le système doit connaître à tout moment ? (Position, direction, état…)
+- Y a-t-il des limites de capacité ? Lesquelles ?
+- Que se passe-t-il si une ressource devient indisponible ? (Panne moteur, porte bloquée, surcharge…)
+</Aside>
+
+{/* <details>
+<summary>Exemple de solution — Partie 1</summary>
+
+| Ressource | Type | Limite ou contrainte | Que se passe-t-il si elle manque ? |
+|-----------|------|----------------------|------------------------------------|
+| Cabines A et B | Physique | Capacité : 8 personnes / 630 kg chacune | Les passagers doivent attendre ; la file d'attente s'allonge |
+| Moteur de traction | Physique | Un par cabine ; ne peut déplacer qu'une cabine à la fois | La cabine est immobilisée ; les passagers sont bloqués à l'intérieur |
+| Portes (cabine + palier) | Physique | Temps d'ouverture/fermeture ~3 secondes | Blocage du cycle : la cabine ne peut ni charger ni repartir |
+| Câbles et contrepoids | Physique | Charge maximale liée au contrepoids | Risque de surcharge ; le système refuse de bouger |
+| Boutons d'appel (par étage) | Physique | Un par direction par étage | L'étage ne peut plus envoyer de demande au système |
+| Capteurs de position | Physique | Un par étage par puits | Le système ne sait plus où se trouve la cabine ; arrêt de sécurité |
+| Position actuelle de chaque cabine | Logique | Valeur entre 1 et 15 | Impossible de calculer les trajets ; ordonnancement aveugle |
+| Direction de déplacement | Logique | Montée, descente ou immobile | Le système ne peut pas décider quelles demandes servir en chemin |
+| File d'attente des demandes | Logique | Limitée par le nombre d'étages (15) × 2 directions | Perte de demandes ; des passagers attendent indéfiniment |
+| Charge actuelle (poids) | Logique | 630 kg par cabine | Surcharge non détectée → risque de sécurité ou panne moteur |
+| État de chaque cabine | Logique | En service, en panne, en maintenance | Une cabine en panne non signalée reçoit encore des demandes |
+
+</details> */}
+
+---
+
+## Partie 2 : Ordonnancer les demandes
+
+Il est 8h30. Voici la situation :
+
+- **Cabine A** est au 7e étage, elle monte.
+- **Cabine B** est au 2e étage, elle est immobile.
+- Demandes en attente :
+  - Étage 1 → veut monter (3 personnes)
+  - Étage 5 → veut monter (1 personne)
+  - Étage 12 → veut descendre (2 personnes)
+  - Étage 9 → veut monter (1 personne)
+  - Étage 3 → veut descendre (1 personne)
+  - **Étage 6 → alarme incendie déclenchée**
+
+<Steps>
+
+1. **Ordre de traitement**
+   Décide dans quel ordre chaque cabine devrait répondre aux demandes. Justifie tes choix : pourquoi cet ordre et pas un autre ?
+
+2. **Stratégie d'ordonnancement**
+   Décris ta stratégie en termes généraux. Par exemple : « La cabine continue dans sa direction actuelle et s'arrête aux étages demandés sur son chemin avant de changer de direction. » Comment ta stratégie gère-t-elle le cas où les deux cabines sont sollicitées au même étage ?
+
+3. **Gestion de l'urgence**
+   L'alarme incendie à l'étage 6 change-t-elle ta stratégie ? Que devrait faire le système quand un événement prioritaire survient ? Quelles demandes normales sont interrompues ou retardées ?
+
+4. **Et si la charge augmente ?**
+   À 8h45, dix nouvelles personnes arrivent au rez-de-chaussée. Ton système de 2 ascenseurs suffit-il ? Quelles options as-tu si la demande dépasse la capacité ?
+
+</Steps>
+
+
+{/* <details>
+<summary>Exemple de solution — Partie 2</summary>
+
+**1. Ordre de traitement**
+
+L'alarme incendie à l'étage 6 est traitée **en priorité absolue**, avant toute demande normale.
+
+- **Cabine A** (au 7e, monte) : elle est la plus proche de l'étage 6. Le système interrompt sa montée et la redirige immédiatement vers l'étage 6 pour évacuation. Ensuite, elle descend au rez-de-chaussée. Une fois l'urgence traitée, elle reprend : étage 9 (sur son chemin en montant), puis étage 12.
+- **Cabine B** (au 2e, immobile) : elle prend en charge les demandes normales. Étage 1 (descend d'un étage, 3 personnes — forte demande), puis étage 3 (sur le chemin en remontant), puis étage 5.
+
+**2. Stratégie d'ordonnancement**
+
+Stratégie de type **SCAN (algorithme de l'ascenseur)** : chaque cabine continue dans sa direction actuelle et dessert toutes les demandes sur son chemin avant de changer de direction. Quand les deux cabines pourraient répondre à la même demande, le système assigne la cabine la plus proche pour minimiser le temps d'attente.
+
+**3. Gestion de l'urgence**
+
+Oui, l'alarme change tout. Le système passe en **mode urgence** :
+- La cabine la plus proche de l'étage 6 interrompt son trajet normal et se rend à cet étage.
+- Les demandes normales sont mises en file d'attente (pas perdues, mais retardées).
+- L'autre cabine peut continuer le service normal ou être aussi redirigée selon la gravité.
+- En cas d'incendie confirmé, les deux cabines descendent au rez-de-chaussée et se désactivent (protocole standard des vrais ascenseurs).
+
+C'est l'équivalent d'une **interruption matérielle** dans un OS : le processeur arrête ce qu'il fait pour traiter l'événement critique.
+
+**4. Augmentation de charge**
+
+Avec 10 nouvelles personnes au RDC et une capacité de 8 par cabine, un seul voyage ne suffit pas. Options :
+- **File d'attente avec rotation** : les 8 premiers montent, les 2 suivants attendent le prochain voyage.
+- **Répartition entre cabines** : quand les deux cabines sont libres, les envoyer toutes les deux au RDC.
+- **Limitation de service** : temporairement, ne desservir que les étages les plus demandés (express vers les étages 5, 10, 15).
+- Dans un vrai système, on pourrait ajouter un troisième ascenseur — c'est l'équivalent du **scaling horizontal** (ajouter un serveur).
+
+</details> */}
+
+---
+
+## Partie 3 : Concevoir l'interface utilisateur
+
+Un OS offre des interfaces pour interagir avec le système : la ligne de commande, l'interface graphique, les appels système. Ton ascenseur aussi a besoin d'interfaces — et pas une seule.
+
+Conçois **deux interfaces** distinctes :
+
+**Interface passager (utilisateur régulier)**
+
+<Aside type="note" title="Questions de conception">
+- Quels contrôles sont disponibles dans la cabine ? Dans le couloir ?
+- Quelles informations le passager voit-il ? (Étage actuel, direction, temps d'attente…)
+- Que voit et peut faire le passager quand il y a une urgence ?
+- Comment le système confirme-t-il qu'une demande a été reçue ?
+</Aside>
+
+**Interface de maintenance (administrateur système)**
+
+<Aside type="note" title="Questions de conception">
+- Quelles informations un technicien a-t-il besoin de voir en temps réel ?
+- Quelles actions un technicien peut-il déclencher qu'un passager ne peut pas ? (Bloquer un étage, forcer un retour, désactiver une cabine…)
+- Comment le technicien accède-t-il à l'historique des événements ?
+</Aside>
+
+
+{/* <details>
+<summary>Exemple de solution — Partie 3</summary>
+
+**Interface passager (utilisateur régulier)**
+
+*Dans le couloir (par étage) :*
+- Bouton d'appel montée (▲) et descente (▼) — rétroéclairé quand la demande est enregistrée (confirmation visuelle).
+- Afficheur : position actuelle de chaque cabine et direction de déplacement.
+- En mode urgence : voyant rouge clignotant + message « Ne pas utiliser — prenez les escaliers ».
+
+*Dans la cabine :*
+- Panneau de boutons d'étage (1-15) — chaque bouton s'allume quand il est pressé.
+- Bouton d'ouverture/fermeture de portes.
+- Bouton d'alarme (cloche) pour signaler un problème.
+- Afficheur : étage actuel, direction, prochain arrêt.
+- Indicateur de surcharge (sonore + visuel) quand le poids max est dépassé.
+- Interphone pour communication avec la maintenance.
+
+*Justification :* L'interface passager est **simple et limitée** — on ne peut que demander un étage et signaler un problème. C'est le principe du moindre privilège : l'utilisateur n'a accès qu'à ce dont il a besoin.
+
+**Interface de maintenance (administrateur système)**
+
+*Panneau physique (dans la salle des machines) :*
+- Vue en temps réel : position, direction, charge, état (en service / en panne / en maintenance) de chaque cabine.
+- Commandes exclusives : bloquer un étage, forcer le retour au RDC, désactiver/réactiver une cabine, activer le mode urgence manuellement.
+- Accès aux journaux : filtrage par cabine, par date, par niveau de sévérité (INFO, ALERTE, ERREUR, URGENCE).
+- Compteurs de performance : nombre de trajets/jour, temps moyen d'attente, nombre de surcharges.
+
+*Accès à distance (tablette/ordinateur) :*
+- Consultation des journaux et des alertes en temps réel.
+- Notifications push pour les événements ALERTE et URGENCE.
+- Pas de commandes critiques à distance (sécurité — il faut être sur place pour forcer un retour).
+
+*Justification :* L'interface admin donne accès à **tout** ce que le passager ne voit pas : état interne du système, historique, commandes de contrôle. C'est la distinction entre une interface graphique (GUI) et un accès administrateur (terminal root / panneau d'admin).
+
+</details> */}
+
+---
+
+## Partie 4 : Journaliser les événements
+
+Quand un serveur web plante à 3h du matin, personne n'est là pour voir ce qui s'est passé. La seule chose qui reste, ce sont les **logs**. C'est pareil pour un ascenseur : le journal des événements est la mémoire du système.
+
+Conçois le **système de journalisation** de ton ascenseur.
+
+<Steps>
+
+1. **Quels événements enregistrer ?**
+   Fais la liste des événements que ton système devrait consigner. Pense aux catégories : opérations normales, avertissements, erreurs, urgences.
+
+2. **Quel format ?**
+   Propose un format pour chaque entrée de journal. Quelles informations chaque entrée devrait-elle contenir ? (horodatage, identifiant de cabine, type d'événement, détails…)
+
+3. **Exemples concrets**
+   Rédige **5 entrées de journal** qui racontent une séquence réaliste — par exemple, un trajet normal suivi d'un incident.
+
+4. **Conservation et accès**
+   Combien de temps les journaux devraient-ils être conservés ? Qui devrait y avoir accès ? Les journaux de maintenance et les journaux d'utilisation devraient-ils être dans le même fichier ?
+
+</Steps>
+
+
+{/* <details>
+<summary>Exemple de solution — Partie 4</summary>
+
+**1. Événements à enregistrer**
+
+| Catégorie | Exemples |
+|-----------|----------|
+| INFO (opération normale) | Départ, arrivée, ouverture/fermeture de portes, passager(s) monté(s)/descendu(s) |
+| ALERTE (avertissement) | Surcharge détectée, porte bloquée plus de 10 secondes, tentative d'ouverture en mouvement |
+| ERREUR (dysfonctionnement) | Capteur de position défaillant, moteur en surchauffe, communication perdue avec une cabine |
+| URGENCE (critique) | Alarme incendie, passager coincé, chute libre détectée, arrêt d'urgence déclenché |
+
+**2. Format proposé**
+
+```
+[HORODATAGE] [ID-CABINE] [NIVEAU] MESSAGE (détails optionnels)
+```
+
+Chaque entrée contient :
+- **Horodatage** : date et heure précise (à la seconde).
+- **Identifiant** : quelle cabine ou SYSTEME pour les événements globaux.
+- **Niveau de sévérité** : INFO, ALERTE, ERREUR ou URGENCE.
+- **Message** : description concise de l'événement.
+- **Détails** : données supplémentaires entre parenthèses (charge, nombre de passagers, étage…).
+
+**3. Cinq entrées réalistes — séquence « trajet normal puis incident »**
+
+```
+[2025-03-25 08:30:00] [CABINE-A] [INFO]    Appel reçu étage 3 (direction : montée)
+[2025-03-25 08:30:22] [CABINE-A] [INFO]    Arrivée étage 3 — portes ouvertes (charge : 2 passagers, 140 kg)
+[2025-03-25 08:30:35] [CABINE-A] [INFO]    Départ étage 3 → étage 9 (charge : 5 passagers, 385 kg)
+[2025-03-25 08:30:52] [CABINE-A] [ALERTE]  Surcharge détectée étage 5 (charge : 9 passagers, 710 kg > 630 kg max) — portes maintenues ouvertes
+[2025-03-25 08:31:10] [CABINE-A] [INFO]    Surcharge résolue (charge : 7 passagers, 520 kg) — reprise du trajet
+```
+
+**4. Conservation et accès**
+
+- **Durée de conservation** : les logs INFO peuvent être conservés 30 jours, les logs ALERTE/ERREUR pendant 1 an, les logs URGENCE pendant 5 ans (obligations légales de sécurité).
+- **Accès** : les techniciens de maintenance ont un accès complet ; la direction de l'édifice a accès aux statistiques agrégées (nombre de pannes, temps d'attente moyen) mais pas aux détails techniques.
+- **Séparation** : idéalement, on sépare les journaux d'utilisation (INFO) et les journaux de maintenance (ALERTE, ERREUR, URGENCE) dans des fichiers distincts. Ça évite de chercher une panne dans des milliers de lignes de trajets normaux — exactement comme on sépare `access.log` et `error.log` sur un serveur web.
+
+</details> */}
+
+---
+
+## Partie 5 : Le pont vers le serveur web
+
+Tu viens de concevoir un système qui reçoit des demandes, alloue des ressources, gère des priorités et journalise des événements. Un **serveur web** fait exactement la même chose.
+
+Complète le tableau suivant en identifiant l'équivalent serveur web de chaque élément de ton système d'ascenseur :
+
+| Concept | Dans ton ascenseur | Équivalent serveur web |
+|---------|-------------------|----------------------|
+| Demande d'un utilisateur | Appui sur un bouton d'appel | ? |
+| Ressource principale | Cabine d'ascenseur | ? |
+| File d'attente | Demandes en attente à différents étages | ? |
+| Ordonnancement | Ta stratégie de la partie 2 | ? |
+| Limite de capacité | Poids max / nombre max de passagers | ? |
+| Répartition de charge | 2 ascenseurs se partagent les demandes | ? |
+| Événement prioritaire | Alarme incendie | ? |
+| Interface utilisateur | Boutons et afficheur dans la cabine | ? |
+| Interface administrateur | Panneau de maintenance | ? |
+| Journal des événements | Logs de la partie 4 | ? |
+| Panne d'une ressource | Ascenseur en maintenance | ? |
+
+<Aside type="note" title="Question de synthèse">
+Selon toi, pourquoi est-il utile de comprendre ces concepts d'ordonnancement et de gestion de ressources quand on développe des applications web ? Donne un exemple concret tiré de ton expérience ou de ce que tu as appris dans tes autres cours.
+</Aside>
+
+{/* 
+<details>
+<summary>Exemple de solution — Partie 5</summary>
+
+| Concept | Dans ton ascenseur | Équivalent serveur web |
+|---------|-------------------|----------------------|
+| Demande d'un utilisateur | Appui sur un bouton d'appel | Requête HTTP (GET, POST…) envoyée par un navigateur |
+| Ressource principale | Cabine d'ascenseur | Processus serveur (thread ou worker) qui traite une requête |
+| File d'attente | Demandes en attente à différents étages | File d'attente de requêtes (request queue) en attente de traitement |
+| Ordonnancement | Algorithme SCAN (dessert les étages sur le chemin) | Algorithme d'ordonnancement du serveur (FIFO, round-robin, priorité) |
+| Limite de capacité | Poids max / nombre max de passagers | Nombre maximal de connexions simultanées (ex. : pool de 100 workers) |
+| Répartition de charge | 2 ascenseurs se partagent les demandes | Load balancer qui distribue les requêtes entre plusieurs serveurs (Nginx, HAProxy) |
+| Événement prioritaire | Alarme incendie | Processus critique (ex. : sauvegarde d'urgence, alerte de sécurité, signal SIGKILL) |
+| Interface utilisateur | Boutons et afficheur dans la cabine | Page web, formulaire, interface du site — ce que l'utilisateur voit et touche |
+| Interface administrateur | Panneau de maintenance | Terminal SSH, panneau d'administration, tableau de bord de monitoring (Grafana, htop) |
+| Journal des événements | Logs de la partie 4 | Fichiers de logs du serveur (`access.log`, `error.log`, journaux applicatifs) |
+| Panne d'une ressource | Ascenseur en maintenance | Serveur hors ligne — le load balancer redirige le trafic vers les serveurs restants (failover) |
+
+**Question de synthèse — exemple de réponse :**
+
+Comprendre l'ordonnancement et la gestion de ressources est essentiel en développement web parce que nos applications ne fonctionnent pas en isolation. Quand un site reçoit 500 requêtes en même temps, le serveur doit décider lesquelles traiter en premier, combien il peut en gérer simultanément, et que faire quand il est débordé. Si on ne comprend pas ces mécanismes, on crée des applications qui fonctionnent bien en test avec un seul utilisateur mais qui plantent en production dès qu'il y a du trafic réel.
+
+Par exemple, dans notre cours de développement back-end, on a vu qu'une requête vers une base de données peut bloquer un worker pendant plusieurs secondes. Si tous les workers sont bloqués, les nouvelles requêtes s'empilent dans la file d'attente — exactement comme des gens qui attendent un ascenseur occupé. Comprendre ce phénomène nous permet de concevoir des solutions (requêtes asynchrones, mise en cache, scaling horizontal) au lieu de simplement constater que « le site est lent ».
+
+</details> */}

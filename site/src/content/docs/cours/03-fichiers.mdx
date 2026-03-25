@@ -1,8 +1,8 @@
 ---
-title: "Fichiers, permissions et liens symboliques"
-description: "Comprendre le rôle du système d'exploitation dans la gestion des fichiers, lire les détails affichés par ls -l, et utiliser les liens symboliques."
+title: "Système de fichiers"
+description: "Comprendre le rôle du système d'exploitation dans la gestion des fichiers, l'anatomie d'un fichier, la navigation dans l'arborescence et les liens symboliques."
 sidebar:
-  label: "Fichiers et permissions"
+  label: "Fichiers"
 ---
 
 import { Tabs, TabItem, Aside, Steps, Card, CardGrid } from '@astrojs/starlight/components';
@@ -26,7 +26,7 @@ Quand tu tapes `ls` ou que tu ouvres l'explorateur de fichiers, c'est l'OS qui t
   Le bibliothécaire sait exactement sur quelle étagère, dans quelle rangée le livre se trouve physiquement. Tu n'as pas besoin de le savoir.
 </Aside>
 
-### Les systèmes de fichiers
+## Les systèmes de fichiers
 
 Pour organiser les données sur un disque, l'OS utilise un **système de fichiers** (*filesystem*). C'est le format qui définit comment les fichiers, les dossiers, les permissions et les métadonnées sont structurés sur le support de stockage.
 
@@ -68,25 +68,6 @@ Le nom d'un fichier sous Linux peut contenir presque n'importe quel caractère, 
 <Aside type="tip" title="Convention en dev web">
   Dans un projet web, on nomme presque toujours les fichiers en minuscules avec des tirets : `mon-composant.jsx`, `reset-styles.css`, `api-utils.js`. C'est la convention la plus portable entre les systèmes.
 </Aside>
-
-#### Fichier et dossier dans Linux
-
-Dans Linux (et plus largement dans les systèmes Unix), un dossier est lui-même un type particulier de fichier.
-
-Pour le système de fichiers, il n’existe pas une séparation fondamentale entre “fichier” et “dossier” :
-ce sont simplement des objets ayant des rôles différents dans l’organisation des données.
-
-Techniquement, le système manipule des structures appelées **inodes**, qui contiennent les métadonnées d’une ressource (type, droits, taille, emplacement sur le disque, etc.).
-
-Un inode peut représenter :
-
-- un fichier régulier
-- un dossier (directory)
-- un lien symbolique
-- un périphérique
-- etc.
-
-Un dossier est donc essentiellement un **fichier spécial qui contient une liste de noms et de références vers d’autres ressources**.
 
 ### L'emplacement
 
@@ -150,6 +131,26 @@ En pratique, c'est la date de modification qui t'intéresse le plus souvent.
 
 ---
 
+## Dossiers et inodes
+
+Dans Linux, un dossier est lui-même un type particulier de fichier. Pour le système de fichiers, il n'existe pas de séparation fondamentale entre « fichier » et « dossier » : ce sont des objets ayant des rôles différents dans l'organisation des données.
+
+En interne, le système associe chaque fichier et chaque dossier à une structure appelée **inode**. L'inode contient toutes les métadonnées d'une ressource : type, taille, permissions, dates, emplacement sur le disque. Le nom du fichier, lui, n'est *pas* dans l'inode — il est stocké dans le dossier parent.
+
+Un dossier est donc essentiellement un **fichier spécial qui contient une liste de noms associés à des inodes**.
+
+<Aside type="note" title="Le compteur de liens dans ls -l">
+  Le chiffre après les permissions dans `ls -l` est le **nombre de liens** qui pointent vers le même inode :
+
+  ```
+  drwxr-xr-x 2 labex labex 4096 mars 22 08:00 css
+  ```
+
+  Un dossier vide affiche `2` parce que deux noms pointent vers son inode : son propre nom (`css`) et l'entrée `.` à l'intérieur du dossier (qui signifie « moi-même »). Chaque sous-dossier ajouté augmente ce compteur de 1, à cause de l'entrée `..` du sous-dossier qui pointe vers le parent.
+</Aside>
+
+---
+
 ## Lire la sortie de `ls -l`
 
 Quand tu tapes `ls -l`, chaque ligne affiche une quantité dense d'information. Voici comment la décoder.
@@ -180,120 +181,12 @@ Prenons la deuxième ligne :
 | Permissions propriétaire | `rw-` | Lecture + écriture |
 | Permissions groupe | `r--` | Lecture seule |
 | Permissions autres | `r--` | Lecture seule |
-| Nombre de liens | `1` | Un seul lien pointe vers ce fichier |
+| Nombre de liens | `1` | Un seul lien pointe vers l'inode de ce fichier |
 | Propriétaire | `labex` | L'utilisateur qui possède le fichier |
 | Groupe | `labex` | Le groupe associé au fichier |
 | Taille | `245` | 245 octets |
 | Date | `mars 22 10:30` | Dernière modification |
 | Nom | `index.html` | Le nom du fichier |
-
----
-
-## Les permissions
-
-Les permissions sont le mécanisme par lequel Linux contrôle **qui peut faire quoi** avec chaque fichier. 
-C'est un concept fondamental — sur un serveur web, une erreur de permission peut rendre ton site inaccessible ou, pire, exposer des données sensibles.
-
-### Les trois niveaux
-
-Chaque fichier a trois catégories d'utilisateurs :
-
-| Catégorie | Symbole | Qui ? |
-|-----------|---------|-------|
-| **Propriétaire** (*user*) | `u` | L'utilisateur qui a créé le fichier |
-| **Groupe** (*group*) | `g` | Les membres du groupe associé au fichier |
-| **Autres** (*others*) | `o` | Tous les autres utilisateurs du système |
-
-### Les trois actions
-
-Pour chaque catégorie, trois actions sont possibles :
-
-| Permission | Symbole | Sur un fichier | Sur un dossier |
-|------------|---------|----------------|----------------|
-| **Lecture** | `r` | Lire le contenu | Lister le contenu (`ls`) |
-| **Écriture** | `w` | Modifier le contenu | Créer/supprimer des fichiers dedans |
-| **Exécution** | `x` | Exécuter comme un programme | Entrer dans le dossier (`cd`) |
-
-<Aside type="caution" title="Attention aux dossiers">
-  Sans la permission `x` sur un dossier, tu ne peux pas y entrer avec `cd`, même si tu as la permission `r` pour en lister le contenu. 
-  Les deux permissions sont nécessaires pour naviguer normalement dans un dossier.
-</Aside>
-
-### Lire les permissions
-
-Les permissions s'affichent sous forme d'une chaîne de 9 caractères, divisée en trois groupes de trois :
-
-```
-rw-r--r--
-│││││││││
-│││││││└┘─ Autres :  r-- (lecture seule)
-│││││└┘─── Groupe :  r-- (lecture seule)
-│││└┘───── Proprio :  rw- (lecture + écriture)
-```
-
-Un tiret `-` signifie que la permission est absente.
-
-### Modifier les permissions avec `chmod`
-
-La commande `chmod` modifie les permissions. Elle accepte deux syntaxes.
-
-**Syntaxe symbolique** (plus lisible) :
-
-```bash
-chmod u+x script.sh        # ajouter l'exécution pour le propriétaire
-chmod g+w fichier.txt       # ajouter l'écriture pour le groupe
-chmod o-r fichier.txt       # retirer la lecture pour les autres
-chmod a+r fichier.txt       # ajouter la lecture pour tout le monde (a = all)
-```
-
-**Syntaxe numérique** (plus rapide) :
-
-Chaque permission a une valeur : `r` = 4, `w` = 2, `x` = 1. On additionne pour chaque catégorie :
-
-| Permissions | Calcul | Valeur |
-|-------------|--------|--------|
-| `rwx` | 4 + 2 + 1 | 7 |
-| `rw-` | 4 + 2 + 0 | 6 |
-| `r-x` | 4 + 0 + 1 | 5 |
-| `r--` | 4 + 0 + 0 | 4 |
-| `---` | 0 + 0 + 0 | 0 |
-
-On écrit trois chiffres : propriétaire, groupe, autres.
-
-```bash
-chmod 755 script.sh       # rwxr-xr-x
-chmod 644 index.html      # rw-r--r--
-chmod 600 config.env      # rw------- (propriétaire seul)
-```
-
-### Permissions courantes en développement web
-
-| Fichier | Permission | Numérique | Pourquoi |
-|---------|------------|-----------|----------|
-| Pages HTML, CSS, JS | `rw-r--r--` | `644` | Le serveur web doit pouvoir les lire, mais pas les modifier. |
-| Scripts exécutables | `rwxr-xr-x` | `755` | Le serveur doit pouvoir les exécuter. |
-| Fichiers de configuration (`.env`) | `rw-------` | `600` | Contiennent des mots de passe — personne d'autre ne doit les lire. |
-| Dossiers | `rwxr-xr-x` | `755` | Le serveur doit pouvoir y entrer et lister le contenu. |
-| Dossier `uploads/` | `rwxrwxr-x` | `775` | Le serveur web (groupe) doit pouvoir y écrire. |
-
-<Aside type="caution" title="Erreur courante en déploiement">
-  Tu déploies ton site et tu obtiens une **erreur 403 Forbidden**. 
-  La cause la plus fréquente : le serveur web (Apache, Nginx) n'a pas la permission de lire tes fichiers. 
-  Un `chmod 644` sur les fichiers et `chmod 755` sur les dossiers résout généralement le problème.
-</Aside>
-
-### Changer le propriétaire avec `chown`
-
-```bash
-chown utilisateur fichier.txt                # changer le propriétaire
-chown utilisateur:groupe fichier.txt         # changer le propriétaire et le groupe
-chown -R utilisateur:groupe dossier/         # récursif (dossier + contenu)
-```
-
-<Aside type="note">
-  `chown` nécessite généralement les droits administrateur (`sudo`). 
-  Sur un serveur web, on l'utilise pour s'assurer que le serveur (souvent l'utilisateur `www-data` ou `nginx`) est propriétaire des fichiers qu'il doit servir.
-</Aside>
 
 ---
 
@@ -328,29 +221,63 @@ Les fichiers cachés courants en développement web :
 
 ---
 
-## Les liens symboliques
+## Naviguer dans l'arborescence
 
-Un **lien symbolique** (*symlink*) est un fichier spécial qui pointe vers un autre fichier ou dossier. 
-C'est l'équivalent d'un raccourci, mais intégré au système de fichiers — les programmes qui ouvrent le lien accèdent directement à la cible.
+L'arborescence Linux peut contenir des milliers de dossiers. Au quotidien, tu te déplaces dans cette structure avec quelques commandes de base.
 
-### Créer un lien symbolique
+### Se repérer et se déplacer
+
+```bash
+pwd                  # où suis-je ?
+cd dossier           # entrer dans un dossier
+cd ..                # remonter d'un niveau
+cd ~                 # retourner au dossier personnel
+cd /                 # aller à la racine
+```
+
+Deux façons de décrire un emplacement :
+
+| | Chemin relatif | Chemin absolu |
+|---|---|---|
+| **Point de départ** | Le dossier courant | La racine `/` |
+| **Exemple** | `cd ../js` | `cd /home/labex/projet/js` |
+| **Avantage** | Court à écrire | Fonctionne de n'importe où |
+
+En pratique, on utilise les chemins relatifs pour les déplacements courts (« le dossier juste à côté ») et les chemins absolus quand on doit accéder à un emplacement précis sans ambiguïté.
+
+### Le problème des chemins longs
+
+Dans un projet réel, les chemins peuvent devenir longs et répétitifs :
+
+```bash
+cd /var/www/mon-application/shared/assets/images
+cd /home/labex/projets/client-xyz/frontend/src/components
+```
+
+Taper ces chemins régulièrement est fastidieux et source d'erreurs. C'est ici que les **liens symboliques** deviennent utiles.
+
+### Raccourcir un chemin avec un lien symbolique
+
+Un **lien symbolique** (*symlink*) est un fichier spécial qui pointe vers un autre fichier ou dossier. C'est un raccourci intégré au système de fichiers — les programmes qui ouvrent le lien accèdent directement à la cible.
 
 ```bash
 ln -s cible nom-du-lien
 ```
 
-Exemples :
+Par exemple, au lieu de taper le chemin complet à chaque fois :
 
 ```bash
-ln -s css/style.css styles            # lien vers un fichier
-ln -s /var/www/html mon-site          # lien vers un dossier
+# Créer un raccourci vers un dossier profondément imbriqué
+ln -s /var/www/mon-application/shared/assets/images ~/images-app
+
+# Maintenant, pour y accéder :
+cd ~/images-app
 ```
 
 Avec `ls -l`, un lien symbolique est identifiable par le `l` au début et la flèche `->` :
 
 ```
-lrwxrwxrwx 1 labex labex 13 mars 22 11:00 styles -> css/style.css
-lrwxrwxrwx 1 labex labex 13 mars 22 11:00 mon-site -> /var/www/html
+lrwxrwxrwx 1 labex labex 45 mars 22 11:00 images-app -> /var/www/mon-application/shared/assets/images
 ```
 
 ### Supprimer un lien symbolique
@@ -366,13 +293,11 @@ Supprimer un lien ne supprime **pas** la cible. Seul le raccourci est retiré.
   Toute tentative d'ouvrir le lien produit une erreur « No such file or directory ».
 </Aside>
 
-### Pourquoi utiliser des liens symboliques ?
-
-En développement web, les symlinks sont partout. Voici les cas d'usage les plus courants.
+### Les symlinks en développement web
 
 #### `node_modules/.bin/`
 
-Quand tu installes un outil comme `eslint` ou `vite` avec npm, le binaire exécutable est installé dans `node_modules/.bin/` sous forme de lien symbolique qui pointe vers le vrai fichier dans le paquet :
+Quand tu installes un outil comme `eslint` ou `vite` avec npm, le binaire exécutable est placé dans `node_modules/.bin/` sous forme de lien symbolique :
 
 ```
 node_modules/.bin/vite -> ../vite/bin/vite.js
@@ -380,59 +305,34 @@ node_modules/.bin/vite -> ../vite/bin/vite.js
 
 C'est ce qui permet à `npx vite` de fonctionner sans installer l'outil globalement.
 
-#### `npm link` et développement local
-
-Si tu développes deux projets en parallèle — par exemple une bibliothèque et une application qui l'utilise — tu peux créer un lien symbolique plutôt que de publier et réinstaller à chaque changement :
-
-```bash
-cd ma-bibliotheque
-npm link                    # enregistre le paquet localement
-
-cd ../mon-application
-npm link ma-bibliotheque    # crée un symlink dans node_modules/
-```
-
-Chaque modification dans `ma-bibliotheque` est immédiatement visible dans `mon-application` sans rien réinstaller.
-
 #### Configuration de serveur web
 
-Sur un serveur Linux avec Nginx ou Apache, les sites disponibles et les sites actifs sont souvent gérés par des symlinks :
+Sur un serveur Linux avec Nginx, les sites disponibles et les sites actifs sont gérés par des symlinks :
 
 ```bash
-# Nginx : activer un site
+# Activer un site
 ln -s /etc/nginx/sites-available/mon-site.conf /etc/nginx/sites-enabled/
 
-# Nginx : désactiver un site
+# Désactiver un site (supprime le lien, pas la configuration)
 rm /etc/nginx/sites-enabled/mon-site.conf
 ```
 
-La configuration reste dans `sites-available/`. Le lien dans `sites-enabled/` dit à Nginx « ce site est actif ». 
-Pour désactiver un site, on supprime le lien — la configuration est préservée.
+La configuration reste dans `sites-available/`. Le lien dans `sites-enabled/` dit à Nginx « ce site est actif ». Pour désactiver un site, on supprime le lien — la configuration est préservée.
 
-#### Dossier partagé entre projets
+<Aside type="note" title="Pour aller plus loin : npm link">
+  Si tu développes deux projets en parallèle — par exemple une bibliothèque et une application qui l'utilise — `npm link` crée un lien symbolique dans `node_modules/` qui pointe vers ta copie locale de la bibliothèque. Chaque modification est immédiatement visible sans rien réinstaller.
 
-Si plusieurs projets utilisent les mêmes images ou les mêmes polices, un lien symbolique évite la duplication :
+  ```bash
+  cd ma-bibliotheque
+  npm link
 
-```bash
-ln -s /home/labex/ressources-communes/images projet-a/images
-ln -s /home/labex/ressources-communes/images projet-b/images
-```
+  cd ../mon-application
+  npm link ma-bibliotheque
+  ```
+</Aside>
 
-Les deux projets accèdent aux mêmes fichiers. Une mise à jour dans le dossier source se reflète partout.
+<Aside type="note" title="Pour aller plus loin : lien symbolique vs lien physique">
+  Linux offre aussi des **liens physiques** (*hard links*), créés avec `ln` sans `-s`. Un lien physique pointe directement vers les données sur le disque (l'inode), pas vers un chemin. Si la cible est supprimée, les données restent accessibles via le lien physique — contrairement au lien symbolique qui devient cassé.
 
-### Lien symbolique vs lien physique
-
-Linux offre aussi des **liens physiques** (*hard links*), créés avec `ln` sans l'option `-s`. La différence est fondamentale :
-
-| | Lien symbolique (`ln -s`) | Lien physique (`ln`) |
-|---|---|---|
-| Pointe vers | Un **chemin** (nom de fichier) | Les **données** sur le disque |
-| Peut cibler un dossier | Oui | Non |
-| Peut traverser des disques | Oui | Non |
-| Si la cible est supprimée | Lien cassé | Les données restent accessibles |
-| Visible dans `ls -l` | `l` + flèche `->` | Pas de distinction visuelle |
-
-<Aside type="tip" title="En pratique">
-  Dans le développement web, on utilise presque exclusivement les liens symboliques. 
-  Les liens physiques sont utiles dans des cas spécifiques (sauvegardes, gestion de paquets), mais tu n'en auras pas besoin au quotidien.
+  En contrepartie, un lien physique ne peut pas cibler un dossier et ne peut pas traverser des disques différents. En développement web, on utilise presque exclusivement les liens symboliques.
 </Aside>

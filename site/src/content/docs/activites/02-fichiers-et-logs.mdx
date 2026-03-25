@@ -1,5 +1,5 @@
 ---
-title: "Activité 2 : Manipulation de fichiers et consultation de logs"
+title: "Manipulation de fichiers et consultation de logs"
 description: "Organiser, consulter et archiver des fichiers dans un scénario de serveur de monitoring : cp, mv, rm, cat, less, head, tail et redirections."
 sidebar:
   label: "Fichiers et logs"
@@ -33,7 +33,7 @@ Dans cette activité, tu vas **simuler ce travail**. Tu vas créer toi-même les
 - combiner des commandes pour extraire de l'information utile ;
 - organiser des fichiers dans une arborescence de projet.
 
-## Nouvelles commandes
+## Commandes shell
 
 ### Copier et déplacer
 
@@ -220,7 +220,7 @@ cat config/serveur.conf
 
 ---
 
-## Partie 3 — Organiser et archiver
+## Partie 3 : Organiser et archiver
 
 ### 1. Archiver les logs
 
@@ -286,56 +286,6 @@ ls logs
   3. Tu dois déplacer tous les logs de mars dans les archives et les renommer avec le préfixe `archive-`. Écris les commandes nécessaires pour le log du 21 mars.
 </Aside>
 
----
-
-## Partie 4 — Défi : journée d'administration
-
-### Objectif
-
-Tu prends en charge une nouvelle journée de monitoring. Réalise les tâches suivantes **sans aide pas à pas** — utilise les commandes apprises dans les parties précédentes.
-
-<Steps>
-1. **Générer le log du 22 mars**
-   Crée le fichier `logs/sys-2026-03-22.log` avec au moins 8 lignes réalistes. Inclus au minimum un message INFO, un OK, un WARN et un ERROR. Respecte le format des logs précédents.
-
-2. **Consulter et vérifier**
-   Affiche les 3 premières lignes pour vérifier le démarrage. Affiche les 3 dernières pour voir la fin de journée. Parcours le fichier complet avec `less`.
-
-3. **Créer le rapport du 22 mars**
-   Génère `rapports/rapport-2026-03-22.txt` contenant un titre, les 3 premières lignes et les 3 dernières lignes du log, séparées par des en-têtes clairs.
-
-4. **Archiver**
-   Copie le log du 21 mars dans `archives/` et renomme-le avec le préfixe `archive-`.
-
-5. **Mettre à jour l'historique**
-   Ajoute le contenu du log du 22 mars à la fin de `rapports/historique-complet.txt`.
-
-6. **Sauvegarder la configuration**
-   Copie `config/serveur.conf` dans `archives/serveur-backup.conf`.
-
-7. **Vérification finale**
-   Affiche l'arborescence complète avec `ls -R` et vérifie le contenu des fichiers clés avec `cat`.
-</Steps>
-
-### Trace des commandes
-
-<Aside type="caution" title="Important">
-  **Conserve une trace de toutes les commandes que tu exécutes pour réaliser ce défi.** Une fois terminé :
-
-  ```bash
-  history > mes-commandes-activite2.txt
-  ```
-</Aside>
-
-### Analyse : vers l'automatisation
-
-Relis ta trace de commandes et réponds aux questions suivantes :
-
-1. Quelles commandes as-tu répétées le plus souvent ?
-2. Les étapes « générer un log → créer un rapport → archiver → mettre à jour l'historique » suivent-elles toujours le même patron ?
-3. Si tu devais faire ce travail chaque jour pendant un mois, combien de commandes taperais-tu au total ?
-4. En observant ta trace, quelles étapes pourraient être regroupées dans un seul fichier exécutable ?
-5. Si ce fichier existait, que faudrait-il pouvoir y changer pour l'adapter à une nouvelle date ?
 
 ---
 
@@ -374,24 +324,3 @@ Quelques observations :
 - Chaque requête HTTP génère une nouvelle ligne dans le log — en production, un tel fichier peut atteindre des milliers de lignes, d'où l'utilité de `less`, `head` et `tail`.
 
 ---
-
-## Travail à remettre
-
-### Livrables
-
-1. Les **réponses aux questions** des parties 1, 2 et 3.
-2. L'**arborescence complète** du dossier `serveur-monitor`, vérifiée avec `ls -R`.
-3. Le **contenu des fichiers clés** : le log du 22 mars, le rapport du 22 mars, l'historique complet, et la sauvegarde de configuration — vérifiés avec `cat`.
-4. La **trace de tes commandes** (`mes-commandes-activite2.txt`).
-5. Les **réponses aux questions d'analyse** sur l'automatisation (partie 4).
-
-### Grille d'évaluation
-
-| Critère | Points |
-|---------|--------|
-| Réponses aux questions des parties 1, 2 et 3 (clarté et justesse) | /5 |
-| Log du 22 mars réaliste et bien formaté | /3 |
-| Rapport, archive et historique correctement générés | /4 |
-| Trace des commandes fournie | /3 |
-| Réflexion sur l'automatisation | /5 |
-| **Total** | **/20** |
