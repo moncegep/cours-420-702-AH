@@ -1,0 +1,455 @@
+---
+title: "Découvrir Linux avec VMware"
+description: "Installer une machine virtuelle Linux avec VMware, configurer l'environnement et lancer un premier serveur web."
+sidebar:
+  order: 1
+---
+
+import { Aside, Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+
+La virtualisation te permet de faire tourner un système d'exploitation complet à l'intérieur de ton ordinateur. Dans ce tutoriel, tu vas créer une machine virtuelle Linux avec VMware, la configurer, et y lancer ton premier serveur web.
+
+<Aside type="tip">
+Ce tutoriel est un complément pratique de la [page de notes sur la virtualisation](/cours/04-virtualisation). Si des termes comme **machine hôte**, **hyperviseur** ou **conteneur** ne te sont pas familiers, consulte les notes avant de commencer.
+</Aside>
+
+## Prérequis
+
+Avant de commencer, assure-toi d'avoir :
+
+- Un ordinateur avec **au moins 8 Go de RAM** (4 Go seront alloués à la VM).
+- **20 Go d'espace disque libre** minimum.
+- Un processeur qui supporte la virtualisation (Intel VT-x ou AMD-V).
+
+<Aside type="caution" title="Virtualisation désactivée?">
+Sur certains ordinateurs, la virtualisation est désactivée par défaut dans le BIOS/UEFI. Si VMware affiche une erreur au démarrage de la VM, tu devras redémarrer ton ordinateur, entrer dans le BIOS (souvent avec la touche **F2**, **F10** ou **Suppr** au démarrage), puis activer l'option **Intel VT-x** ou **AMD-V** (parfois sous le nom *SVM Mode*).
+</Aside>
+
+<Aside title="C'est quoi le BIOS?">
+Le **BIOS** (*Basic Input/Output System*) — ou son successeur moderne **UEFI** — est le tout premier programme qui s'exécute quand tu allumes ton ordinateur, *avant même* le système d'exploitation. Son rôle est de vérifier que le matériel fonctionne (RAM, disque, processeur), puis de lancer le système d'exploitation.
+
+Le BIOS contient aussi des réglages bas niveau, comme l'ordre de démarrage des disques ou l'activation de la virtualisation matérielle. C'est pour ça que certaines fonctionnalités, comme la création de machines virtuelles, nécessitent d'aller modifier un réglage directement dans le BIOS.
+</Aside>
+
+## Partie 1 — Installer VMware
+
+<Tabs>
+  <TabItem label="Windows">
+    <Steps>
+      1. Rends-toi sur la [page de téléchargement de VMware Workstation Pro](https://www.vmware.com/products/desktop-hypervisor/workstation-and-fusion).
+
+      2. Télécharge la version **Workstation Pro** pour Windows.
+
+      3. Lance le fichier `.exe` téléchargé et suis les étapes d'installation (tu peux accepter les options par défaut).
+
+      4. Redémarre ton ordinateur si le programme te le demande.
+    </Steps>
+  </TabItem>
+  <TabItem label="Mac">
+    <Steps>
+      1. Rends-toi sur la [page de téléchargement de VMware Fusion](https://www.vmware.com/products/desktop-hypervisor/workstation-and-fusion).
+
+      2. Télécharge la version **Fusion Pro** pour macOS.
+
+      3. Ouvre le fichier `.dmg` téléchargé et glisse l'application dans le dossier **Applications**.
+
+      4. Au premier lancement, macOS te demandera d'autoriser VMware dans **Réglages système → Confidentialité et sécurité**. Accepte les permissions demandées.
+    </Steps>
+  </TabItem>
+</Tabs>
+
+<Aside>
+**Pourquoi VMware et pas VirtualBox?** Les deux sont de bons outils. VMware offre généralement de meilleures performances et une intégration plus fluide avec le système hôte. VirtualBox est gratuit et très utilisé en éducation — si tu le connais déjà, les concepts sont les mêmes.
+</Aside>
+
+<Aside type="caution" title="Compte Broadcom requis">
+Depuis le rachat de VMware par Broadcom, le téléchargement de VMware Workstation Pro et Fusion Pro nécessite la création d'un **compte gratuit** sur le site de Broadcom. Le processus peut inclure une vérification par courriel. Prévois quelques minutes supplémentaires pour cette étape.
+</Aside>
+
+## Partie 2 — Télécharger Ubuntu
+
+<Steps>
+  1. Rends-toi sur la [page de téléchargement d'Ubuntu Desktop](https://ubuntu.com/download/desktop).
+
+  2. Télécharge la dernière version **LTS** (Long Term Support). C'est un fichier `.iso` d'environ 5 Go.
+
+  3. Note l'emplacement du fichier téléchargé — tu en auras besoin à l'étape suivante.
+</Steps>
+
+<Aside type="tip">
+**Pourquoi Ubuntu?** C'est la distribution Linux la plus documentée et la plus accessible pour débuter. C'est aussi l'une des distributions les plus utilisées sur les serveurs web — ce que tu apprends ici est directement transférable en contexte professionnel.
+</Aside>
+
+<Aside title="Autres distributions possibles">
+Ubuntu n'est pas la seule option. Voici quelques alternatives courantes :
+
+- **Linux Mint** — Basé sur Ubuntu, avec une interface qui ressemble davantage à Windows. Très intuitif pour une première expérience Linux.
+- **Debian** — La distribution « mère » d'Ubuntu. Plus minimaliste et plus stable, mais moins conviviale pour débuter.
+- **Fedora** — Utilisé par Red Hat (entreprise majeure du monde Linux). Les commandes de gestion de paquets sont différentes (`dnf` au lieu de `apt`).
+
+Pour ce cours, on utilise Ubuntu parce que la majorité des tutoriels, forums et documentations en ligne ciblent cette distribution. Les compétences acquises (terminal, permissions, services) sont transférables à toutes les distributions.
+</Aside>
+
+## Partie 3 — Créer la machine virtuelle
+
+<Tabs>
+  <TabItem label="VMware Workstation (Windows)">
+    <Steps>
+      1. Ouvre VMware Workstation et clique sur **Create a New Virtual Machine**.
+
+      2. Sélectionne **Installer disc image file (ISO)** et choisis le fichier `.iso` d'Ubuntu que tu as téléchargé.
+
+      3. Configure les ressources de la VM :
+         - **Mémoire (RAM)** : 4096 Mo (4 Go)
+         - **Processeurs** : 2 cœurs
+         - **Disque dur** : 20 Go minimum (25 Go recommandé)
+
+      4. Donne un nom clair à ta VM, par exemple `Ubuntu-Dev`.
+
+      5. Clique sur **Finish**. La VM apparaît dans la liste à gauche.
+    </Steps>
+  </TabItem>
+  <TabItem label="VMware Fusion (Mac)">
+    <Steps>
+      1. Ouvre VMware Fusion et choisis **Créer une machine virtuelle personnalisée** (ou glisse directement le fichier `.iso` dans la fenêtre).
+
+      2. Sélectionne le fichier `.iso` d'Ubuntu.
+
+      3. Configure les ressources :
+         - **Mémoire (RAM)** : 4096 Mo (4 Go)
+         - **Processeurs** : 2 cœurs
+         - **Disque dur** : 20 Go minimum (25 Go recommandé)
+
+      4. Nomme ta VM `Ubuntu-Dev` et choisis un emplacement de sauvegarde.
+
+      5. Clique sur **Terminer**.
+    </Steps>
+  </TabItem>
+</Tabs>
+
+<Aside type="note" title="Comprendre le choix des ressources">
+Les ressources que tu attribues à la VM sont **empruntées** à ton ordinateur hôte. Pendant que la VM tourne, ton hôte dispose de ce qui reste. C'est un équilibre à trouver.
+
+**RAM (mémoire vive)** — C'est la ressource la plus critique. Ubuntu Desktop a besoin d'au moins 2 Go pour fonctionner, mais 4 Go offrent une expérience fluide. Règle simple : ne dépasse jamais la moitié de la RAM totale de ton hôte, sinon les deux systèmes seront lents.
+
+**Processeurs (cœurs CPU)** — 2 cœurs suffisent pour du développement web courant. Augmenter à 4 cœurs accélérerait la compilation de gros projets, mais offre peu de gain pour les exercices de ce cours.
+
+**Disque dur** — 20 Go est le strict minimum. Avec Node.js, les dossiers `node_modules` grossissent vite. 25-30 Go te donnent une marge confortable. Le disque virtuel ne consomme de l'espace réel qu'au fur et à mesure de son utilisation (il ne prend pas 25 Go immédiatement).
+
+**Attention** : si tu ouvres des applications gourmandes sur l'hôte (navigateur avec beaucoup d'onglets, VS Code, Figma), la VM sera plus lente. Ferme ce dont tu n'as pas besoin côté hôte quand tu travailles dans la VM.
+</Aside>
+
+## Partie 4 — Installer Ubuntu
+
+Démarre ta VM en cliquant sur **Power on** (ou le bouton ▶). L'installation d'Ubuntu se lance automatiquement.
+
+<Steps>
+  1. Choisis la langue **Français** et clique sur **Installer Ubuntu**.
+
+  2. Sélectionne la disposition du clavier **Français (Canada)**.
+
+  3. Choisis **Installation normale** (inclut le navigateur, les utilitaires, etc.).
+
+  4. Pour le type d'installation, accepte l'option par défaut (**Effacer le disque et installer Ubuntu**). Pas d'inquiétude — c'est le disque *virtuel* de la VM, pas le disque de ton ordinateur.
+
+  5. Crée ton compte utilisateur :
+     - **Nom** : ton prénom
+     - **Nom de l'ordinateur** : `ubuntu-dev`
+     - **Mot de passe** : choisis quelque chose de simple à retenir (tu en auras besoin souvent pour les commandes `sudo`)
+
+  6. Attends la fin de l'installation (5 à 15 minutes selon ton ordinateur), puis redémarre la VM quand elle te le propose.
+</Steps>
+
+<Aside title="Ton utilisateur est-il administrateur?">
+Oui. Le premier utilisateur créé pendant l'installation d'Ubuntu est automatiquement ajouté au groupe `sudo`, ce qui lui donne le droit d'exécuter des commandes en tant qu'administrateur (*root*) en préfixant la commande avec `sudo`.
+
+Ce n'est pas un comportement universel à toutes les distributions Linux. Sur **Debian**, par exemple, l'installateur te demande explicitement de créer un mot de passe pour le compte *root* (l'administrateur système). Le premier utilisateur créé est alors un utilisateur normal, sans accès `sudo` par défaut.
+
+En Linux, les rôles se résument à deux niveaux principaux :
+
+- **root** — L'administrateur absolu du système. Il peut tout faire : installer des logiciels, modifier la configuration, supprimer des fichiers système. On n'utilise jamais `root` directement au quotidien pour éviter les erreurs catastrophiques.
+- **Utilisateur normal** — Peut utiliser le système et gérer ses propres fichiers, mais doit passer par `sudo` (si autorisé) pour les opérations qui touchent au système.
+</Aside>
+
+<Aside type="caution">
+Après le redémarrage, la VM peut te demander de retirer le « disque d'installation ». Appuie simplement sur **Entrée** — VMware gère ça automatiquement.
+</Aside>
+
+### Vérification
+
+Ouvre un terminal dans Ubuntu (raccourci : `Ctrl + Alt + T`) et tape :
+
+```bash
+uname -a
+```
+
+Tu devrais voir une ligne qui contient `Linux` et `ubuntu`. C'est la preuve que ton système Linux fonctionne dans la VM.
+
+<Aside type="tip" title="Réflexe web dev">
+La commande `uname -a` est courante en contexte professionnel. Quand tu configures un serveur de déploiement, c'est souvent la première commande que tu tapes pour vérifier quel OS et quel noyau (*kernel*) sont installés.
+</Aside>
+
+## Partie 5 — Configurer l'environnement
+
+Maintenant que Linux est installé, on va le préparer pour le développement.
+
+### Mettre à jour le système
+
+```bash
+sudo apt update
+sudo apt upgrade -y
+```
+
+- `sudo apt update`: cette commande télécharge la liste des mises à jour disponibles.
+- `sudo apt upgrade -y`: cette commande les installe. Le `-y` répond automatiquement « oui » aux confirmations.
+
+### Comprendre `apt`
+
+`apt` est le **gestionnaire de paquets** d'Ubuntu et des distributions basées sur Debian. Un gestionnaire de paquets automatise le téléchargement, l'installation, la mise à jour et la suppression de logiciels depuis un dépôt centralisé. C'est l'équivalent système de `npm` pour Node.js.
+
+Voici les commandes `apt` les plus courantes :
+
+| Commande | Rôle |
+|---|---|
+| `sudo apt update` | Rafraîchir la liste des paquets disponibles (ne télécharge rien) |
+| `sudo apt upgrade -y` | Installer toutes les mises à jour disponibles |
+| `sudo apt install nom-du-paquet` | Installer un nouveau logiciel |
+| `sudo apt remove nom-du-paquet` | Désinstaller un logiciel (garde la configuration) |
+| `sudo apt purge nom-du-paquet` | Désinstaller un logiciel et supprimer sa configuration |
+| `apt search mot-clé` | Chercher un paquet par nom ou description |
+| `apt list --installed` | Lister tous les paquets installés |
+
+<Aside title="apt sur d'autres distributions">
+`apt` est propre à la famille Debian/Ubuntu. D'autres distributions utilisent des gestionnaires différents, mais le principe est le même :
+
+| Distribution | Gestionnaire | Installer un paquet | Mettre à jour |
+|---|---|---|---|
+| Ubuntu / Debian | `apt` | `sudo apt install git` | `sudo apt update && sudo apt upgrade` |
+| Fedora / RHEL | `dnf` | `sudo dnf install git` | `sudo dnf upgrade` |
+| Arch Linux | `pacman` | `sudo pacman -S git` | `sudo pacman -Syu` |
+
+Sur **macOS**, l'outil équivalent le plus courant est [Homebrew](https://brew.sh/) (`brew install git`). Sur **Windows**, des outils comme [Chocolatey](https://chocolatey.org/) (`choco install git`) ou [winget](https://learn.microsoft.com/fr-fr/windows/package-manager/winget/) (`winget install git`) jouent un rôle similaire.
+</Aside>
+
+### Installer les outils de base
+
+```bash
+sudo apt install -y git curl wget
+```
+
+### Vérification
+
+Confirme que les outils sont bien installés :
+
+```bash
+git --version
+curl --version
+```
+
+Les deux commandes doivent afficher un numéro de version sans erreur.
+
+## Partie 6 — Interaction entre la VM et l'hôte
+
+Ta VM est un système isolé, mais VMware te permet de créer des passerelles avec ton ordinateur hôte.
+
+### Installer les VMware Tools
+
+Les **VMware Tools** sont un ensemble de pilotes et d'utilitaires qui améliorent l'intégration entre la VM et le système hôte. Sans eux, la VM fonctionne, mais de façon limitée : la résolution d'écran est fixe, le copier-coller ne marche pas, et les performances graphiques sont réduites.
+
+<Aside title="VMware Tools et les différents OS">
+Le concept des VMware Tools n'est pas propre à Ubuntu — **chaque système invité** (Windows, Linux, macOS) a besoin de sa propre version pour fonctionner de manière optimale dans VMware. C'est comparable aux pilotes de carte graphique : le matériel (ici, le matériel *virtuel*) a besoin de pilotes adaptés à l'OS qui l'utilise.
+
+Pour les distributions Linux, VMware recommande le paquet open source `open-vm-tools`, maintenu par la communauté et inclus dans les dépôts officiels de la plupart des distributions (Ubuntu, Debian, Fedora, etc.). Pour Windows, VMware fournit un installateur `.exe` dédié accessible via le menu **VM → Install VMware Tools**.
+
+VirtualBox a un équivalent appelé **Guest Additions**, qui remplit exactement le même rôle.
+</Aside>
+
+Sur Ubuntu, `open-vm-tools` est souvent pré-installé. Vérifie :
+
+```bash
+dpkg -l | grep open-vm-tools
+```
+
+Si la commande n'affiche rien, installe-les manuellement :
+
+```bash
+sudo apt install -y open-vm-tools open-vm-tools-desktop
+```
+
+Le paquet `open-vm-tools` fournit les fonctionnalités de base (synchronisation de l'horloge, arrêt propre). Le paquet `open-vm-tools-desktop` ajoute les fonctionnalités graphiques (redimensionnement, copier-coller, glisser-déposer). Les deux sont nécessaires pour Ubuntu Desktop.
+
+Après installation (ou vérification), redémarre la VM :
+
+```bash
+sudo reboot
+```
+
+### Ce que ça débloque
+
+Une fois les VMware Tools actives, tu peux :
+
+- **Copier-coller** du texte entre ton système hôte et la VM.
+- **Glisser-déposer** des fichiers entre les deux systèmes.
+- **Redimensionner** la fenêtre de la VM et la résolution s'adapte automatiquement.
+
+<Aside type="tip">
+Le copier-coller entre l'hôte et la VM est particulièrement utile quand tu suis un tutoriel sur ton navigateur (côté hôte) et que tu tapes des commandes dans le terminal Linux (côté VM).
+</Aside>
+
+### Dossiers partagés (optionnel)
+
+Tu peux aussi configurer un dossier partagé entre l'hôte et la VM dans les paramètres de VMware (**VM → Settings → Options → Shared Folders**). Le dossier apparaît dans la VM sous `/mnt/hgfs/`.
+
+C'est utile si tu veux éditer du code avec VS Code sur ton hôte et l'exécuter dans Linux.
+
+## Partie 7 — Snapshots : ton filet de sécurité
+
+Un **snapshot** est une « photo » de l'état complet de ta VM à un instant donné : le disque, la mémoire, la configuration. Si quelque chose se casse, tu peux revenir en arrière en un clic.
+
+### Créer un snapshot
+
+Dans VMware, va dans **VM → Snapshot → Take Snapshot**. Nomme-le `config-de-base` et ajoute une description (par exemple : *« Système installé, mis à jour, git et curl installés »*).
+
+### Exercice : casser et restaurer
+
+L'objectif ici est de constater par toi-même que le snapshot te protège.
+
+<Steps>
+  1. Confirme que `git` est installé :
+
+     ```bash
+     git --version
+     ```
+
+  2. Supprime volontairement `git` :
+
+     ```bash
+     sudo apt remove -y git
+     ```
+
+  3. Vérifie que `git` n'est plus disponible :
+
+     ```bash
+     git --version
+     ```
+
+     Tu devrais obtenir une erreur : `command not found`.
+
+  4. Restaure ton snapshot : dans VMware, va dans **VM → Snapshot → Revert to Snapshot** et choisis `config-de-base`.
+
+  5. Après la restauration, ouvre un terminal et vérifie :
+
+     ```bash
+     git --version
+     ```
+
+     `git` est de retour — la VM est revenue exactement à l'état du snapshot.
+</Steps>
+
+<Aside type="tip" title="Réflexe web dev">
+Les snapshots de VM sont conceptuellement proches des **commits Git** : les deux permettent de capturer un état et d'y revenir si nécessaire. La différence est qu'un snapshot capture *tout le système* (OS, fichiers, logiciels installés), alors qu'un commit capture uniquement les fichiers d'un dépôt.
+</Aside>
+
+## Partie 8 — Mini-projet : un serveur web dans ta VM
+
+Pour terminer, tu vas installer Node.js dans ta VM et lancer un petit serveur web. L'objectif est de voir concrètement à quoi sert une VM en contexte de développement web.
+
+### Installer Node.js
+
+```bash
+curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+sudo apt install -y nodejs
+```
+
+Vérifie l'installation :
+
+```bash
+node --version
+npm --version
+```
+
+Les deux doivent afficher un numéro de version.
+
+### Créer le projet
+
+<Steps>
+  1. Crée un dossier pour le projet et déplace-toi dedans :
+
+     ```bash
+     mkdir ~/mon-serveur && cd ~/mon-serveur
+     ```
+
+  2. Initialise un projet Node.js :
+
+     ```bash
+     npm init -y
+     ```
+
+  3. Installe Express :
+
+     ```bash
+     npm install express
+     ```
+
+  4. Crée le fichier serveur :
+
+     ```bash
+     cat > index.js << 'EOF'
+     const express = require('express');
+     const app = express();
+     const port = 3000;
+
+     app.get('/', (req, res) => {
+       res.send(`
+         <h1>Bonjour depuis la VM!</h1>
+         <p>Ce serveur roule sur ${process.platform} (${process.arch})</p>
+         <p>Version de Node.js : ${process.version}</p>
+       `);
+     });
+
+     app.listen(port, () => {
+       console.log(`Serveur démarré sur http://localhost:${port}`);
+     });
+     EOF
+     ```
+
+  5. Lance le serveur :
+
+     ```bash
+     node index.js
+     ```
+
+  6. Ouvre un **deuxième terminal** (`Ctrl + Alt + T`) et teste le serveur :
+
+     ```bash
+     curl http://localhost:3000
+     ```
+
+     Tu devrais voir le HTML renvoyé par ton serveur, incluant les informations sur le système Linux.
+
+  7. Tu peux aussi ouvrir le navigateur Firefox dans la VM et visiter `http://localhost:3000` pour voir la page rendue.
+
+  8. Reviens au premier terminal et arrête le serveur avec `Ctrl + C`.
+</Steps>
+
+### Ce que tu viens de démontrer
+
+Ce petit exercice reproduit un scénario très courant en développement web professionnel : tu développes et testes ton application sur un système Linux, le même type de système que celui qui héberge la majorité des serveurs web en production. Ta VM joue ici le rôle d'un **environnement de développement isolé** — si quelque chose se casse, ton ordinateur principal n'est pas affecté.
+
+<Aside type="note" title="Pour aller plus loin">
+Dans un vrai projet, tu pourrais aussi :
+
+- Configurer un **dossier partagé** pour éditer le code avec VS Code sur ton hôte et l'exécuter dans la VM.
+- Utiliser le mode réseau **Bridge** pour accéder au serveur depuis ton navigateur hôte (au lieu de `localhost`, tu utiliserais l'adresse IP de la VM).
+- Prendre un **snapshot** avant d'installer de nouvelles dépendances pour pouvoir revenir en arrière facilement.
+</Aside>
+
+## Récapitulatif
+
+Dans ce tutoriel, tu as :
+
+- Installé VMware et créé une machine virtuelle Linux (Ubuntu).
+- Configuré l'environnement avec les outils de développement de base.
+- Établi des passerelles entre ton système hôte et la VM (copier-coller, dossiers partagés).
+- Utilisé les snapshots comme filet de sécurité.
+- Installé Node.js et lancé un serveur Express dans un environnement Linux isolé.

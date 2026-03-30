@@ -1,0 +1,217 @@
+---
+title: "Virtualisation et machines virtuelles"
+description: "Comprendre la virtualisation, les machines virtuelles et les conteneurs dans un contexte de développement web."
+sidebar:
+  order: 0
+---
+
+import { Aside, Tabs, TabItem, Card, CardGrid } from '@astrojs/starlight/components';
+import ViewSwitcher from '../../../components/ViewSwitcher.astro';
+import SlidePresentation from '../../../components/Slide/SlidePresentation';
+import slideData from '../../../data/slides/virtualisation.yaml';
+
+<ViewSwitcher>
+  <SlidePresentation slot="slides" data={slideData} client:load />
+
+Quand tu développes une application web, tu la codes sur ton ordinateur personnel. Mais cette application finira par tourner sur un **serveur** — un ordinateur distant, probablement sous Linux, avec une configuration différente de la tienne. La virtualisation est l'ensemble des techniques qui te permettent de reproduire cet environnement serveur *sur ta propre machine*, sans acheter un deuxième ordinateur.
+
+## La machine hôte et le système hôte
+
+Ton ordinateur physique — celui que tu touches, avec son clavier, son écran et son disque dur — est la **machine hôte**. Le système d'exploitation installé dessus (Windows, macOS ou Linux) est le **système hôte** (*host OS*). C'est lui qui démarre quand tu allumes ton ordinateur.
+
+Tout ce qui est virtualisé s'exécute *à l'intérieur* de cet hôte. L'hôte prête ses ressources (mémoire, processeur, disque) aux systèmes virtualisés. Pendant qu'une machine virtuelle tourne, ton hôte dispose de ce qui reste — c'est un partage, pas une duplication.
+
+<Aside>
+Les termes **hôte** et **invité** (*guest*) reviennent constamment en virtualisation. L'hôte est le système physique qui fournit les ressources. L'invité est le système virtualisé qui les consomme. Un même ordinateur peut héberger plusieurs invités simultanément.
+</Aside>
+
+## Qu'est-ce que la virtualisation?
+
+La virtualisation consiste à créer une version simulée d'une ressource informatique — un ordinateur complet, un réseau, un espace de stockage — à l'aide d'un logiciel. Au lieu d'acheter du matériel dédié, tu simules ce matériel par logiciel.
+
+Dans ce cours, on s'intéresse principalement à la **virtualisation de système** : simuler un ordinateur complet, avec son propre système d'exploitation, à l'intérieur de ton ordinateur.
+
+### Pourquoi virtualiser?
+
+La virtualisation répond à quatre besoins concrets :
+
+**Tester un autre système.** Tu travailles sur Windows mais tu dois vérifier que ton application fonctionne sur Linux? La virtualisation te permet d'installer Linux sans remplacer Windows.
+
+**Expérimenter sans risque.** Tu veux essayer une commande dont tu n'es pas sûr de l'effet? Dans un environnement virtualisé, une erreur ne touche pas ton système principal. Tu peux même revenir en arrière avec un *snapshot*.
+
+**Isoler des projets.** Deux projets nécessitent des versions différentes de Node.js ou de Python? Chaque environnement virtualisé a sa propre configuration, sans conflit.
+
+**Reproduire un environnement professionnel.** Les serveurs web de production tournent presque tous sous Linux. Virtualiser Linux sur ton ordinateur te permet de travailler dans les mêmes conditions.
+
+<Aside type="tip" title="En développement web">
+Le quatrième point est le plus important pour toi. Quand tu lances `node index.js` dans une machine virtuelle Linux, tu fais exactement la même chose qu'un serveur de production. Les commandes, les chemins de fichiers, les permissions — tout est identique. La VM est ton terrain d'entraînement.
+</Aside>
+
+## Qu'est-ce qu'une machine virtuelle?
+
+Une **machine virtuelle** (VM) est un ordinateur complet simulé par logiciel. Elle possède son propre système d'exploitation, sa propre mémoire, son propre disque dur — mais tout est virtuel. Du point de vue du système installé dans la VM, il croit être sur un vrai ordinateur.
+
+### L'hyperviseur : le cœur de la virtualisation
+
+La pièce maîtresse de la virtualisation est l'**hyperviseur** — le logiciel qui crée et gère les machines virtuelles. C'est lui qui fait l'intermédiaire entre le matériel réel et les systèmes invités.
+
+Il existe deux types d'hyperviseurs :
+
+**Type 1 (bare-metal)** — L'hyperviseur s'installe directement sur le matériel, *à la place* du système d'exploitation. Il n'y a pas d'OS hôte classique. C'est ce qu'utilisent les centres de données et le cloud (VMware ESXi, Microsoft Hyper-V Server, KVM intégré à Linux).
+
+**Type 2 (hosted)** — L'hyperviseur s'installe comme une application *sur* un système d'exploitation existant. C'est ce que tu utilises sur ton ordinateur personnel (VMware Workstation/Fusion, VirtualBox).
+
+<Aside>
+La différence est importante à comprendre. Quand tu utilises VMware sur ton PC, ton Windows ou macOS est toujours là — VMware tourne « par-dessus ». Sur un serveur AWS, il n'y a pas de Windows ou macOS — l'hyperviseur *est* le système de base, et tes instances EC2 sont des VMs qui tournent directement dessus.
+</Aside>
+
+### Architecture d'une machine virtuelle
+
+Voici comment les couches s'empilent dans une VM sur ton ordinateur (hyperviseur de type 2) :
+
+```
+┌─────────────────────────────────┐
+│   Application (Node.js, etc.)   │  ← ton code
+├─────────────────────────────────┤
+│   OS invité (Ubuntu Linux)      │  ← système complet
+├─────────────────────────────────┤
+│   Matériel virtuel              │  ← CPU, RAM, disque simulés
+│   (émulé par l'hyperviseur)     │
+╞═════════════════════════════════╡
+│   Hyperviseur (VMware)          │  ← gère la VM
+├─────────────────────────────────┤
+│   OS hôte (Windows / macOS)     │  ← ton système principal
+├─────────────────────────────────┤
+│   Matériel réel                 │  ← ton ordinateur physique
+└─────────────────────────────────┘
+```
+
+Chaque VM embarque un **OS complet** (noyau + espace utilisateur). C'est ce qui la rend puissante (isolation totale) mais aussi lourde (chaque VM consomme plusieurs Go de RAM et de disque).
+
+### Exemple concret en développement web
+
+Tu développes une application Express (Node.js) sur ton ordinateur Windows. Le serveur de production est un Ubuntu Linux chez ton hébergeur. Sans virtualisation, tu risques le classique « ça marche sur ma machine » — les chemins de fichiers, les permissions, le comportement du réseau diffèrent entre Windows et Linux.
+
+Avec une VM Ubuntu sur ton Windows :
+
+1. Tu installes Node.js dans la VM avec `sudo apt install nodejs` — exactement la même commande que sur le serveur de production.
+2. Tu lances ton serveur avec `node index.js` — même environnement, mêmes résultats.
+3. Si tu casses quelque chose, tu restaures un *snapshot* et tu recommences.
+
+Le serveur de production et ta VM parlent le même langage. Les surprises au déploiement diminuent drastiquement.
+
+## Qu'est-ce qu'un conteneur?
+
+Un **conteneur** est un environnement isolé qui partage le noyau du système hôte au lieu d'embarquer son propre OS complet. Il empaquète une application avec toutes ses dépendances (bibliothèques, fichiers de configuration, runtime) dans un paquet léger et portable.
+
+L'outil le plus connu pour créer des conteneurs est **Docker**.
+
+### Architecture d'un conteneur
+
+Voici la différence fondamentale avec une VM :
+
+```
+┌────────────────┐ ┌────────────────┐
+│  App A         │ │  App B         │  ← applications isolées
+│  + dépendances │ │  + dépendances │
+├────────────────┤ ├────────────────┤
+│  Conteneur A   │ │  Conteneur B   │  ← environnements séparés
+╞════════════════╧═╧════════════════╡
+│   Docker Engine                   │  ← gère les conteneurs
+├───────────────────────────────────┤
+│   OS hôte (Linux)                 │  ← UN SEUL noyau partagé
+├───────────────────────────────────┤
+│   Matériel réel                   │
+└───────────────────────────────────┘
+```
+
+La ligne clé est **un seul noyau partagé**. Les conteneurs n'embarquent pas leur propre OS — ils utilisent le noyau de l'hôte et se contentent d'isoler l'espace utilisateur (fichiers, processus, réseau). C'est ce qui les rend beaucoup plus légers qu'une VM.
+
+<Aside title="Comment l'isolation fonctionne-t-elle sans OS séparé?">
+Linux fournit deux mécanismes que Docker utilise pour isoler les conteneurs :
+
+**Les namespaces** séparent ce que chaque conteneur *voit*. Chaque conteneur a sa propre vue des processus, du réseau, des fichiers — il ne voit pas les autres conteneurs ni l'hôte.
+
+**Les cgroups** (control groups) limitent ce que chaque conteneur *consomme*. Tu peux limiter un conteneur à 512 Mo de RAM et 1 CPU, même si l'hôte en a 16 Go et 8 cœurs.
+
+Le noyau Linux reste unique — ce sont ses fonctionnalités d'isolation qui permettent à chaque conteneur de se croire seul sur le système.
+</Aside>
+
+### Exemple concret en développement web
+
+Ton application utilise Node.js 20, PostgreSQL 16, et Redis 7. Sans conteneurs, tu dois installer et configurer chacun de ces outils sur ta machine. Si un collègue utilise Node.js 18 ou PostgreSQL 15, vos environnements divergent.
+
+Avec Docker, tu décris l'environnement dans un fichier `docker-compose.yml` :
+
+```yaml
+services:
+  app:
+    image: node:20
+    volumes:
+      - ./src:/app
+    ports:
+      - "3000:3000"
+  db:
+    image: postgres:16
+  cache:
+    image: redis:7
+```
+
+Une seule commande (`docker compose up`) démarre les trois services, chacun dans son conteneur isolé, avec les versions exactes spécifiées. Ton collègue exécute la même commande et obtient exactement le même environnement.
+
+<Aside type="tip" title="Dockerfiles et images">
+Un **Dockerfile** est une recette qui décrit comment construire un conteneur. Une **image** est le résultat de cette recette — un paquet prêt à l'emploi. Tu peux partager des images via des registres comme Docker Hub, de la même manière que tu partages du code via GitHub.
+</Aside>
+
+## Machine virtuelle vs conteneur
+
+Les deux technologies servent à isoler des environnements, mais elles le font de manière fondamentalement différente.
+
+### Ce qui les distingue
+
+| | Machine virtuelle | Conteneur |
+|---|---|---|
+| **Ce qui est simulé** | Un ordinateur complet (matériel + OS) | Un espace utilisateur isolé |
+| **Noyau** | Chaque VM a son propre noyau | Partage le noyau de l'hôte |
+| **Taille typique** | Plusieurs Go | Quelques Mo à quelques centaines de Mo |
+| **Démarrage** | 30 secondes à quelques minutes | Quelques secondes |
+| **Isolation** | Forte (hyperviseur matériel) | Plus légère (namespaces du noyau) |
+| **Utilisation typique** | Exécuter un OS différent de l'hôte | Empaqueter et déployer des applications |
+| **Outils courants** | VMware, VirtualBox, KVM | Docker, Podman, containerd |
+
+### Quand utiliser quoi?
+
+<CardGrid>
+  <Card title="Machine virtuelle" icon="laptop">
+    Tu as besoin d'un **OS complet différent** de ton hôte (Linux sur Windows, par exemple), tu veux une **isolation forte** entre les environnements, ou tu dois tester des configurations au niveau du **système d'exploitation** (noyau, services système, réseau).
+  </Card>
+  <Card title="Conteneur" icon="rocket">
+    Tu veux **empaqueter une application** avec ses dépendances exactes, tu as besoin d'un démarrage **rapide** et d'une empreinte **légère**, ou tu travailles dans un pipeline de **déploiement automatisé** (CI/CD).
+  </Card>
+</CardGrid>
+
+<Aside type="caution" title="Ce ne sont pas des choix mutuels">
+En pratique, les deux coexistent. Un serveur de production peut être une VM (instance EC2 sur AWS) qui exécute des conteneurs Docker à l'intérieur. Sur ton ordinateur, tu peux avoir une VM Linux qui fait tourner Docker. Les conteneurs ne remplacent pas les VM — ils résolvent un problème différent.
+</Aside>
+
+### Le cas de WSL (Windows Subsystem for Linux)
+
+Si tu travailles sur Windows, tu as peut-être entendu parler de **WSL2** (*Windows Subsystem for Linux*). C'est un outil de Microsoft qui intègre un noyau Linux directement dans Windows, dans une VM légère et transparente.
+
+WSL2 n'est ni une VM classique ni un conteneur — c'est un hybride. Il utilise une VM légère gérée automatiquement par Windows pour exécuter un vrai noyau Linux, mais l'intégration est si fluide que tu ne vois pas la frontière (les fichiers sont accessibles des deux côtés, le terminal s'ouvre dans Windows Terminal).
+
+<Aside>
+Pour le développement web quotidien, WSL2 est excellent — c'est souvent l'outil le plus pratique. Mais une VM complète te donne une meilleure compréhension de ce qu'est un système Linux isolé : tu vois le BIOS virtuel, tu gères les ressources, tu crées des snapshots. C'est pourquoi ce cours utilise VMware pour l'apprentissage, même si WSL2 est plus léger pour le travail au quotidien.
+</Aside>
+
+## Récapitulatif
+
+La virtualisation te permet de simuler des environnements informatiques par logiciel. Dans le contexte du développement web, elle résout un problème fondamental : faire en sorte que ton environnement de développement soit identique à l'environnement de production.
+
+**Les machines virtuelles** simulent un ordinateur complet avec son propre OS. Elles offrent une isolation forte mais consomment plus de ressources. C'est l'outil que tu vas utiliser dans le [tutoriel VMware](/virtualisation/tutoriel-vmware) pour installer Linux et te familiariser avec un environnement serveur.
+
+**Les conteneurs** isolent des applications en partageant le noyau de l'hôte. Ils sont plus légers et plus rapides, adaptés au déploiement d'applications. Tu les rencontreras plus tard dans le cours avec Docker.
+
+Les deux technologies ne s'excluent pas — elles se complètent. Comprendre leurs différences et leurs cas d'usage est une compétence fondamentale en développement web moderne.
+
+</ViewSwitcher>
