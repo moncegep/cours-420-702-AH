@@ -1,0 +1,352 @@
+---
+title: Utilisateurs et permissions
+description: Comprendre le modèle de sécurité Linux basé sur les utilisateurs, les groupes et les permissions rwx.
+sidebar:
+  order: 6
+---
+
+import { Aside, Steps, Tabs, TabItem, Card, CardGrid } from '@astrojs/starlight/components';
+
+## L'utilisateur en Linux
+
+Sur ton ordinateur personnel, tu es probablement le seul à l'utiliser. 
+Tu ouvres, modifies et supprimes n'importe quel fichier sans te poser de questions. 
+Sous Linux, et particulièrement sur un **serveur web**, bénéficier d'autant de liberté 
+pourrait s'avérer dangereux.
+
+Linux est un système **multi-utilisateurs** : plusieurs personnes (ou programmes) peuvent l'utiliser simultanément, chacun avec son propre espace et ses propres droits. Le système doit savoir **qui fait quoi** pour protéger les fichiers des uns contre les erreurs (ou la curiosité) des autres.
+
+Chaque action sur le système est exécutée **au nom d'un utilisateur**. Même quand tu lances une commande dans le terminal, Linux sait quel utilisateur tu es et vérifie si tu as le droit de faire ce que tu demandes.
+
+<Aside type="tip" title="Pertinence web">
+Sur un serveur web, ton application Node.js tourne sous un utilisateur dédié (souvent `www-data` ou `node`). Nginx tourne sous un autre. La base de données sous un troisième. Chacun n'a accès qu'à ce dont il a besoin — c'est le **principe du moindre privilège**.
+</Aside>
+
+### Chaque utilisateur a une identité
+
+Quand tu te connectes à un système Linux, tu le fais avec un **nom d'utilisateur** (*username*). En coulisses, Linux associe ce nom à un **UID** (*User ID*) — un numéro unique. C'est le UID que le système utilise réellement pour tout contrôle d'accès; le nom n'est qu'un alias lisible pour les humains.
+
+```bash
+whoami          # Affiche ton nom d'utilisateur
+id              # Affiche ton UID, ton GID et tes groupes
+```
+
+Chaque utilisateur possède aussi un **répertoire personnel** (*home directory*), typiquement `/home/nom_utilisateur`, où il stocke ses fichiers. C'est son espace privé.
+
+<Aside type="note" title="L'utilisateur root">
+L'utilisateur `root` (UID 0) est le **superutilisateur**. Il peut tout faire : lire n'importe quel fichier, modifier la configuration système, créer et supprimer des utilisateurs. C'est un pouvoir nécessaire mais dangereux — une erreur en tant que `root` peut détruire le système.
+</Aside>
+
+---
+
+## Utilisateurs, groupes et sudo
+
+### Le problème de root
+
+Si `root` peut tout faire, pourquoi ne pas toujours travailler en tant que root? Parce qu'un pouvoir illimité rend chaque erreur catastrophique. Un `rm -rf /` accidentel en tant qu'utilisateur normal ne fait pas grand-chose — le système refuse. En tant que `root`, il efface tout.
+
+La solution de Linux : tu travailles avec un **compte ordinaire** au quotidien, et tu élèves tes privilèges **uniquement quand c'est nécessaire**, grâce à `sudo`.
+
+```bash
+apt update                # ❌ Permission refusée — tu n'es pas root
+sudo apt update           # ✅ Exécuté avec les privilèges root
+```
+
+`sudo` (*superuser do*) te permet d'exécuter **une seule commande** avec les privilèges de `root`, sans changer d'utilisateur. Le système te demande ton mot de passe pour confirmer que c'est bien toi.
+
+<Aside type="caution" title="sudo n'est pas automatique">
+Seuls les utilisateurs autorisés peuvent utiliser `sudo`. Sous Ubuntu, l'utilisateur créé lors de l'installation est ajouté au groupe `sudo` par défaut. Sur d'autres distributions, il faut configurer cet accès manuellement via `/etc/sudoers`.
+</Aside>
+
+### Les groupes
+
+Un **groupe** est un ensemble d'utilisateurs qui partagent les mêmes droits d'accès sur certaines ressources. Plutôt que d'accorder des permissions fichier par fichier à chaque utilisateur, on les accorde au groupe — et on ajoute les utilisateurs concernés au groupe.
+
+Chaque utilisateur appartient à au moins un groupe : son **groupe principal** (*primary group*), créé automatiquement avec le même nom que l'utilisateur. Mais un utilisateur peut appartenir à **plusieurs groupes supplémentaires**.
+
+```bash
+groups              # Affiche les groupes de l'utilisateur courant
+groups alice        # Affiche les groupes d'alice
+```
+
+<Aside type="tip" title="Pertinence web">
+Sur un serveur, le groupe `www-data` regroupe les processus qui servent le contenu web. En ajoutant ton utilisateur à ce groupe, tu peux modifier les fichiers du site sans être `root` — et sans ouvrir ces fichiers à tout le monde.
+</Aside>
+
+---
+
+## Comptes utilisateurs
+
+### Les informations d'un compte
+
+Chaque compte utilisateur est défini par plusieurs informations stockées dans le fichier `/etc/passwd` :
+
+- **Nom d'utilisateur** — l'identifiant de connexion (`alice`, `bob`, `www-data`)
+- **UID** — le numéro unique qui identifie l'utilisateur pour le système
+- **GID** — le numéro du groupe principal
+- **Répertoire personnel** — l'espace de travail (`/home/alice`)
+- **Shell** — le programme lancé à la connexion (`/bin/bash`, `/bin/zsh`)
+
+```bash
+cat /etc/passwd | grep alice
+# alice:x:1001:1001:Alice Tremblay:/home/alice:/bin/bash
+```
+
+<Aside type="note" title="Utilisateurs « système »">
+Linux crée automatiquement des utilisateurs pour ses propres services : `www-data` pour le serveur web, `postgres` pour la base de données, `nobody` pour les processus sans privilège. Ces comptes n'ont généralement pas de mot de passe et pas de shell interactif — personne ne se « connecte » avec eux. Ils existent pour que chaque service tourne avec ses propres permissions restreintes.
+</Aside>
+
+### Où sont stockés les mots de passe?
+
+Les mots de passe ne sont **pas** dans `/etc/passwd` (malgré le nom). Ils sont stockés sous forme de **hash** dans `/etc/shadow`, un fichier lisible uniquement par `root`. Cette séparation est une mesure de sécurité : `/etc/passwd` doit être lisible par tous (les programmes en ont besoin pour associer les UID aux noms), mais les mots de passe doivent rester protégés.
+
+---
+
+## À quoi servent les groupes?
+
+Sans les groupes, la gestion des permissions serait un cauchemar. Imagine un projet web avec trois développeurs qui doivent tous modifier les fichiers dans `/var/www/monsite`. Sans groupes, tu aurais deux options :
+
+- Rendre les fichiers accessibles à **tout le monde** — dangereux.
+- Accorder les droits **un par un** à chaque utilisateur — fastidieux et fragile.
+
+Avec les groupes, la solution est propre :
+
+<Steps>
+1. Créer un groupe `webdev`.
+2. Ajouter les trois développeurs au groupe.
+3. Donner au groupe `webdev` les droits de lecture et d'écriture sur `/var/www/monsite`.
+4. Un quatrième développeur rejoint l'équipe? On l'ajoute au groupe — il a immédiatement les bons droits.
+</Steps>
+
+<Aside type="note" title="Groupes courants sur un serveur Linux">
+`sudo` — peut exécuter des commandes en tant que root. `www-data` — processus du serveur web (Apache, Nginx). `docker` — peut exécuter des commandes Docker sans `sudo`. `adm` — peut lire les fichiers de log système.
+</Aside>
+
+---
+
+## Créer un utilisateur, changer d'utilisateur
+
+### Créer un utilisateur
+
+La commande `adduser` crée un compte complet : elle génère le UID, crée le répertoire personnel, copie les fichiers de configuration par défaut et demande un mot de passe.
+
+```bash
+sudo adduser bob
+```
+
+<Aside type="tip" title="adduser vs useradd">
+`adduser` est un script interactif qui guide la création (Debian/Ubuntu). `useradd` est la commande bas niveau — elle ne crée ni le répertoire personnel ni le mot de passe par défaut. En pratique, utilise `adduser` pour les comptes humains et `useradd` pour les scripts automatisés.
+</Aside>
+
+### Changer d'utilisateur
+
+```bash
+su - bob            # Ouvre une session complète en tant que bob (mot de passe requis)
+sudo su - bob       # Idem, sans connaître le mot de passe de bob (requiert sudo)
+exit                # Revient à l'utilisateur précédent
+```
+
+Le tiret (`-`) après `su` est important : il charge l'environnement complet de l'utilisateur cible (variables d'environnement, répertoire personnel, shell). Sans le tiret, tu changes d'identité mais tu restes dans l'environnement de l'utilisateur précédent — source fréquente de confusion.
+
+### Supprimer un utilisateur
+
+```bash
+sudo deluser bob              # Supprime le compte, conserve le répertoire personnel
+sudo deluser --remove-home bob   # Supprime le compte ET le répertoire
+```
+
+---
+
+## Créer un groupe et y ajouter un utilisateur
+
+### Créer un groupe
+
+```bash
+sudo addgroup webdev
+```
+
+### Ajouter un utilisateur à un groupe
+
+```bash
+sudo usermod -aG webdev alice     # Ajoute alice au groupe webdev
+```
+
+<Aside type="caution" title="Le drapeau -a est critique">
+Sans `-a` (*append*), `usermod -G` **remplace** tous les groupes secondaires de l'utilisateur par celui spécifié. Avec `-a`, il **ajoute** le groupe à la liste existante. Oublier `-a` peut retirer un utilisateur du groupe `sudo` — et te bloquer hors de ton propre système.
+</Aside>
+
+L'ajout à un groupe prend effet à la prochaine connexion. Pour appliquer immédiatement sans se déconnecter :
+
+```bash
+newgrp webdev       # Active le groupe dans la session courante
+```
+
+### Vérifier les groupes
+
+```bash
+groups alice        # Liste les groupes d'alice
+getent group webdev # Liste les membres du groupe webdev
+```
+
+---
+
+## Permissions rwx
+
+### Le modèle de permissions Linux
+
+Chaque fichier et répertoire sous Linux est associé à **trois niveaux d'accès** :
+
+- **Propriétaire** (*user*, `u`) — l'utilisateur qui possède le fichier
+- **Groupe** (*group*, `g`) — le groupe associé au fichier
+- **Autres** (*others*, `o`) — tous les autres utilisateurs du système
+
+Pour chaque niveau, trois **types de permissions** sont possibles :
+
+- **`r`** (*read*) — lire le contenu
+- **`w`** (*write*) — modifier le contenu
+- **`x`** (*execute*) — exécuter (fichier) ou traverser (répertoire)
+
+```bash
+ls -l index.js
+# -rwxr-xr-- 1 alice webdev 2048 jan 15 10:30 index.js
+```
+
+<CardGrid>
+  <Card title="Propriétaire (alice)">
+    `rwx` — peut lire, modifier et exécuter le fichier.
+  </Card>
+  <Card title="Groupe (webdev)">
+    `r-x` — peut lire et exécuter, mais pas modifier.
+  </Card>
+  <Card title="Autres">
+    `r--` — peut seulement lire. Pas de modification ni d'exécution.
+  </Card>
+</CardGrid>
+
+### Permissions sur les répertoires
+
+Sur un répertoire, les permissions ont un sens légèrement différent :
+
+- **`r`** — lister le contenu du répertoire (`ls`)
+- **`w`** — créer, renommer ou supprimer des fichiers dans le répertoire
+- **`x`** — accéder au répertoire (`cd`) et à ses sous-éléments
+
+<Aside type="caution" title="Le piège du x sur les répertoires">
+Un répertoire sans `x` est inaccessible, même si tu as `r`. Tu peux voir la liste des fichiers, mais tu ne peux pas les ouvrir ni entrer dans le répertoire. C'est comme voir une porte vitrée verrouillée — tu vois ce qu'il y a derrière, mais tu ne peux pas y accéder.
+</Aside>
+
+### Notation octale
+
+Chaque permission correspond à une valeur numérique : `r` = 4, `w` = 2, `x` = 1. On additionne les valeurs pour chaque niveau :
+
+| Permission | Calcul | Valeur |
+|---|---|---|
+| `rwx` | 4 + 2 + 1 | **7** |
+| `r-x` | 4 + 0 + 1 | **5** |
+| `r--` | 4 + 0 + 0 | **4** |
+| `rw-` | 4 + 2 + 0 | **6** |
+| `---` | 0 + 0 + 0 | **0** |
+
+Ainsi, `rwxr-xr--` s'écrit **754** en notation octale.
+
+<Aside type="tip" title="Valeurs courantes">
+**755** — le standard pour les répertoires et les scripts exécutables. Le propriétaire peut tout faire, les autres peuvent lire et traverser. **644** — le standard pour les fichiers de contenu. Le propriétaire peut lire et écrire, les autres peuvent seulement lire. **600** — fichier privé. Seul le propriétaire peut lire et écrire. Utile pour les clés SSH.
+</Aside>
+
+---
+
+## Commandes : chmod, chown, chgrp
+
+### chmod — modifier les permissions
+
+`chmod` (*change mode*) modifie les permissions d'un fichier ou répertoire. Deux syntaxes sont possibles :
+
+<Tabs>
+  <TabItem label="Notation symbolique">
+    On spécifie **qui** (`u`, `g`, `o`, `a` pour tous), **l'opération** (`+` ajouter, `-` retirer, `=` définir) et **quelle permission** (`r`, `w`, `x`).
+
+    ```bash
+    chmod u+x script.sh         # Ajoute l'exécution pour le propriétaire
+    chmod g+rw fichier.txt      # Ajoute lecture + écriture pour le groupe
+    chmod o-rwx secret.key      # Retire tout pour les autres
+    chmod a+r public.html       # Ajoute la lecture pour tout le monde
+    ```
+  </TabItem>
+  <TabItem label="Notation octale">
+    On donne directement les trois chiffres correspondant aux permissions du propriétaire, du groupe et des autres.
+
+    ```bash
+    chmod 755 script.sh         # rwxr-xr-x — script exécutable standard
+    chmod 644 index.html        # rw-r--r-- — fichier web lisible par tous
+    chmod 600 id_rsa            # rw------- — clé SSH privée
+    chmod 700 deploy.sh         # rwx------ — script privé
+    ```
+  </TabItem>
+</Tabs>
+
+<Aside type="caution" title="L'option -R (récursif)">
+`chmod -R 755 /var/www/monsite` applique les permissions à tout le contenu du répertoire. Attention : 755 est correct pour les *répertoires* mais donne l'exécution aux *fichiers* — ce qui est rarement souhaitable. En pratique, on sépare souvent les deux : `find /var/www -type d -exec chmod 755 {} \;` pour les répertoires et `find /var/www -type f -exec chmod 644 {} \;` pour les fichiers.
+</Aside>
+
+### chown — changer le propriétaire
+
+`chown` (*change owner*) modifie le propriétaire et/ou le groupe d'un fichier.
+
+```bash
+sudo chown alice fichier.txt            # Change le propriétaire
+sudo chown alice:webdev fichier.txt     # Change propriétaire ET groupe
+sudo chown :webdev fichier.txt          # Change seulement le groupe
+sudo chown -R alice:webdev /var/www/    # Récursif sur tout le répertoire
+```
+
+<Aside type="note" title="Pourquoi sudo?">
+Seul `root` peut changer le propriétaire d'un fichier. C'est logique : si n'importe qui pouvait s'attribuer la propriété de n'importe quel fichier, tout le modèle de permissions s'effondrerait.
+</Aside>
+
+### chgrp — changer le groupe
+
+`chgrp` (*change group*) modifie uniquement le groupe associé à un fichier. C'est un raccourci pour `chown :groupe`.
+
+```bash
+sudo chgrp webdev index.js             # Change le groupe du fichier
+sudo chgrp -R webdev /var/www/monsite  # Récursif
+```
+
+### Cas pratique : configurer un site web
+
+Voici un scénario complet qui combine toutes les commandes. Tu configures les permissions d'un site web pour que l'équipe de développement puisse modifier les fichiers, et que le serveur web puisse les servir.
+
+<details>
+<summary>Solution complète</summary>
+
+```bash
+# 1. Créer le groupe de développement
+sudo addgroup webdev
+
+# 2. Ajouter les développeurs au groupe
+sudo usermod -aG webdev alice
+sudo usermod -aG webdev bob
+
+# 3. Définir le propriétaire et le groupe du site
+sudo chown -R alice:webdev /var/www/monsite
+
+# 4. Permissions : propriétaire et groupe peuvent lire/écrire,
+#    les autres (dont www-data) peuvent seulement lire
+# Répertoires : 775 (rwxrwxr-x) — traversable par tous
+sudo find /var/www/monsite -type d -exec chmod 775 {} \;
+# Fichiers : 664 (rw-rw-r--) — modifiables par le groupe
+sudo find /var/www/monsite -type f -exec chmod 664 {} \;
+
+# 5. S'assurer que les nouveaux fichiers héritent du groupe
+sudo chmod g+s /var/www/monsite
+
+# 6. Ajouter www-data au groupe pour que Nginx puisse lire
+sudo usermod -aG webdev www-data
+sudo systemctl restart nginx
+```
+
+</details>
+
+<Aside type="tip" title="Le bit setgid (g+s)">
+Le `chmod g+s` sur un répertoire fait en sorte que les nouveaux fichiers créés à l'intérieur héritent automatiquement du groupe du répertoire (ici `webdev`), plutôt que du groupe principal de l'utilisateur qui les crée. Indispensable pour le travail collaboratif.
+</Aside>

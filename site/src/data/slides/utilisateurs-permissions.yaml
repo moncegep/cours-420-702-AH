@@ -1,0 +1,480 @@
+title: Utilisateurs et permissions
+
+# -----------------------------------------------------------
+# Visual definitions — reusable across cards
+# -----------------------------------------------------------
+
+visuals:
+  multi-user-server:
+    type: stack
+    items:
+      - type: row
+        items:
+          - { text: "App Node.js", color: green }
+          - { text: "Nginx", color: blue }
+          - { text: "PostgreSQL", color: purple }
+      - type: row
+        items:
+          - { text: "user: node", color: green }
+          - { text: "user: www-data", color: blue }
+          - { text: "user: postgres", color: purple }
+      - { text: "Noyau Linux — contrôle d'accès", color: amber }
+      - { text: "Matériel", color: surface }
+
+  identity-stack:
+    type: stack
+    items:
+      - { text: "alice (nom d'utilisateur)", color: blue }
+      - { text: "UID 1001", color: blue }
+      - { text: "GID 1001 (groupe principal)", color: amber }
+      - { text: "/home/alice (répertoire)", color: surface }
+      - { text: "/bin/bash (shell)", color: surface }
+
+  root-danger:
+    type: split
+    separator: "vs"
+    left:
+      type: box
+      text: "rm -rf /"
+      subtext: "Utilisateur normal → refusé"
+      color: green
+      height: 70
+    right:
+      type: box
+      text: "rm -rf /"
+      subtext: "root → tout supprimé"
+      color: amber
+      height: 70
+
+  sudo-flow:
+    type: stack
+    items:
+      - { text: "alice$ sudo apt install nginx", color: blue }
+      - { text: "Vérification : alice ∈ groupe sudo?", color: amber }
+      - { text: "Mot de passe demandé", color: amber }
+      - { text: "Exécution en tant que root", color: green }
+      - { text: "Retour aux privilèges normaux", color: surface }
+
+  group-concept:
+    type: stack
+    items:
+      - type: row
+        items:
+          - { text: alice, color: blue }
+          - { text: bob, color: blue }
+          - { text: carol, color: blue }
+      - { text: "Groupe: webdev", color: amber }
+      - { text: "/var/www/monsite — rw pour webdev", color: green }
+
+  passwd-shadow:
+    type: split
+    separator: false
+    left:
+      type: labeled-stack
+      label: "/etc/passwd"
+      labelColor: blue
+      items:
+        - { text: "Nom, UID, GID", color: blue }
+        - { text: "Home, Shell", color: blue }
+        - { text: "Lisible par tous", color: surface }
+    right:
+      type: labeled-stack
+      label: "/etc/shadow"
+      labelColor: amber
+      items:
+        - { text: "Hash du mot de passe", color: amber }
+        - { text: "Expiration, politique", color: amber }
+        - { text: "Lisible par root seul", color: surface }
+
+  group-without:
+    type: split
+    separator: "vs"
+    left:
+      type: box
+      text: "Sans groupe"
+      subtext: "Droits un par un — fragile"
+      color: amber
+      height: 60
+    right:
+      type: box
+      text: "Avec groupe"
+      subtext: "Ajouter au groupe — propre"
+      color: green
+      height: 60
+
+  rwx-breakdown:
+    type: row
+    gap: 6
+    items:
+      - type: labeled-stack
+        label: "Propriétaire (u)"
+        labelColor: blue
+        items:
+          - { text: "r w x", color: blue }
+      - type: labeled-stack
+        label: "Groupe (g)"
+        labelColor: green
+        items:
+          - { text: "r - x", color: green }
+      - type: labeled-stack
+        label: "Autres (o)"
+        labelColor: amber
+        items:
+          - { text: "r - -", color: amber }
+
+  rwx-meaning:
+    type: split
+    separator: false
+    left:
+      type: labeled-stack
+      label: Fichier
+      labelColor: blue
+      items:
+        - { text: "r = lire le contenu", color: blue }
+        - { text: "w = modifier", color: blue }
+        - { text: "x = exécuter", color: blue }
+    right:
+      type: labeled-stack
+      label: Répertoire
+      labelColor: green
+      items:
+        - { text: "r = lister (ls)", color: green }
+        - { text: "w = créer/supprimer", color: green }
+        - { text: "x = traverser (cd)", color: green }
+
+  octal-stack:
+    type: row
+    gap: 6
+    items:
+      - type: labeled-stack
+        label: "rwx = 7"
+        labelColor: blue
+        items:
+          - { text: "4 + 2 + 1", color: blue }
+      - type: labeled-stack
+        label: "r-x = 5"
+        labelColor: green
+        items:
+          - { text: "4 + 0 + 1", color: green }
+      - type: labeled-stack
+        label: "r-- = 4"
+        labelColor: amber
+        items:
+          - { text: "4 + 0 + 0", color: amber }
+
+  chmod-chown-chgrp:
+    type: stack
+    items:
+      - { text: "chmod — modifier les permissions", color: blue }
+      - { text: "chown — changer le propriétaire", color: green }
+      - { text: "chgrp — changer le groupe", color: amber }
+
+  web-scenario:
+    type: stack
+    items:
+      - { text: "addgroup webdev", color: blue }
+      - { text: "usermod -aG webdev alice bob", color: blue }
+      - { text: "chown -R alice:webdev /var/www", color: green }
+      - { text: "chmod 775 (rép.) / 664 (fich.)", color: amber }
+      - { text: "chmod g+s — héritage du groupe", color: amber }
+      - { text: "Nginx (www-data) ∈ webdev → lecture", color: surface }
+
+# -----------------------------------------------------------
+# Sections
+# -----------------------------------------------------------
+
+sections:
+  - id: intro
+    tag: Introduction
+    title: L'utilisateur en Linux
+    nav: Intro
+    content: |
+      Linux est un système **multi-utilisateurs**. Chaque action est exécutée **au nom d'un utilisateur**, et le système vérifie si cet utilisateur a le droit de la faire.
+
+      Sur un serveur web, ton application Node.js, Nginx et la base de données tournent chacun sous un **utilisateur dédié** avec des droits restreints. C'est le **principe du moindre privilège**.
+    extended:
+      - |
+        Sur ton ordinateur personnel, tu es probablement le seul utilisateur. Tu ouvres, modifies et supprimes n'importe quel fichier. Sur un serveur, cette liberté totale serait dangereuse : une faille dans ton application donnerait à un attaquant les mêmes pouvoirs que toi.
+
+        Le modèle multi-utilisateurs résout ce problème. Chaque service tourne avec ses propres permissions, limitées au strict nécessaire. Si l'application Node.js est compromise, l'attaquant n'a accès qu'aux fichiers de l'application — pas à la base de données, pas aux logs, pas à la configuration système.
+    asides:
+      - type: note
+        text: "Plus de 80% des serveurs web tournent sous Linux. Le modèle de permissions que tu apprends ici est celui que tu utiliseras en production."
+    cards:
+      - type: visual
+        label: Serveur multi-utilisateurs
+        visual: multi-user-server
+      - type: concept
+        label: Principe du moindre privilège
+        text: "Chaque processus ne reçoit que les droits strictement nécessaires à son fonctionnement."
+
+  - id: identite
+    tag: Vocabulaire
+    title: Identité d'un utilisateur
+    nav: Identité
+    content: |
+      Quand tu te connectes, Linux associe ton nom d'utilisateur à un **UID** (*User ID*) — un numéro unique. C'est le UID que le système utilise pour tout contrôle d'accès; le nom n'est qu'un alias lisible.
+
+      Chaque utilisateur a un **répertoire personnel** (`/home/alice`) et un **shell** (`/bin/bash`).
+
+      `whoami` affiche ton nom. `id` affiche ton UID, ton GID et tes groupes.
+    extended:
+      - |
+        L'utilisateur `root` (UID 0) est le **superutilisateur**. Il peut tout faire : lire n'importe quel fichier, modifier la configuration système, créer et supprimer des utilisateurs. C'est un pouvoir nécessaire mais dangereux — une erreur en tant que `root` peut détruire le système.
+      - |
+        Linux crée aussi des **utilisateurs système** pour ses services : `www-data` (serveur web), `postgres` (base de données), `nobody` (processus sans privilège). Ces comptes n'ont pas de mot de passe et pas de shell interactif — personne ne se connecte avec eux. Ils existent pour isoler chaque service.
+    asides:
+      - type: term
+        title: UID
+        text: "Numéro unique identifiant un utilisateur. root = 0, utilisateurs normaux ≥ 1000."
+      - type: term
+        title: Utilisateur système
+        text: "Compte sans shell interactif, créé pour isoler un service (www-data, postgres)."
+    cards:
+      - type: visual
+        label: Anatomie d'un compte
+        visual: identity-stack
+      - type: example
+        label: Commandes
+        text: "whoami → alice. id → uid=1001(alice) gid=1001(alice) groups=1001(alice),27(sudo)."
+
+  - id: sudo
+    tag: Concept clé
+    title: sudo et le problème de root
+    nav: sudo
+    content: |
+      Pourquoi ne pas toujours travailler en tant que `root`? Parce qu'un pouvoir illimité rend chaque erreur catastrophique.
+
+      `sudo` (*superuser do*) te permet d'exécuter **une seule commande** avec les privilèges root, sans changer d'utilisateur. Le système te demande ton mot de passe pour confirmer.
+
+      Tu travailles au quotidien avec un compte ordinaire. Tu élèves tes privilèges **uniquement quand c'est nécessaire**.
+    extended:
+      - |
+        Seuls les utilisateurs du **groupe `sudo`** peuvent utiliser cette commande. Sous Ubuntu, l'utilisateur créé à l'installation y est ajouté automatiquement. Sur d'autres distributions, il faut configurer l'accès manuellement via `/etc/sudoers`.
+
+        Après avoir entré ton mot de passe, `sudo` le retient pendant quelques minutes. Tu n'as pas à le retaper pour chaque commande successive.
+      - |
+        En contexte web, la règle est claire : les opérations système (installer un paquet, redémarrer un service, modifier la configuration Nginx) nécessitent `sudo`. Le code de ton application, lui, ne devrait **jamais** tourner avec les privilèges root.
+    asides:
+      - type: caution
+        text: "Si ton application Node.js tourne en tant que root et qu'elle est compromise, l'attaquant a un accès total au serveur."
+      - type: term
+        title: /etc/sudoers
+        text: "Fichier de configuration qui définit quels utilisateurs peuvent utiliser sudo, et avec quelles restrictions."
+    cards:
+      - type: visual
+        label: Le danger de root
+        visual: root-danger
+      - type: visual
+        label: Flux sudo
+        visual: sudo-flow
+
+  - id: groupes
+    tag: Concept clé
+    title: Les groupes
+    nav: Groupes
+    content: |
+      Un **groupe** est un ensemble d'utilisateurs qui partagent les mêmes droits d'accès sur certaines ressources.
+
+      Chaque utilisateur a un **groupe principal** (créé automatiquement, même nom que l'utilisateur) et peut appartenir à **plusieurs groupes supplémentaires**.
+
+      Plutôt que d'accorder des droits fichier par fichier, on les accorde au groupe — et on ajoute les utilisateurs au groupe.
+    extended:
+      - |
+        Sur un serveur web, les groupes courants sont : `sudo` (peut exécuter des commandes root), `www-data` (processus du serveur web), `docker` (peut utiliser Docker sans sudo), `adm` (peut lire les logs système).
+      - |
+        L'intérêt est la gestion à l'échelle. Trois développeurs doivent modifier les fichiers d'un site? Plutôt que trois `chmod` individuels, tu crées un groupe `webdev`, tu accordes les droits au groupe, et tu y ajoutes les trois développeurs. Un quatrième arrive? Tu l'ajoutes au groupe — terminé.
+    asides:
+      - type: tip
+        text: "groups alice — affiche tous les groupes d'alice. getent group webdev — affiche les membres du groupe."
+    cards:
+      - type: visual
+        label: Le concept
+        visual: group-concept
+      - type: visual
+        label: Sans vs avec groupe
+        visual: group-without
+
+  - id: comptes
+    tag: Administration
+    title: Comptes et mots de passe
+    nav: Comptes
+    content: |
+      Les informations de chaque compte sont dans `/etc/passwd` : nom, UID, GID, répertoire, shell.
+
+      Les mots de passe (sous forme de **hash**) sont dans `/etc/shadow`, lisible par `root` uniquement. Cette séparation est une mesure de sécurité.
+
+      `/etc/passwd` doit être lisible par tous (les programmes en ont besoin). Les mots de passe, eux, doivent rester protégés.
+    extended:
+      - |
+        Une ligne typique de `/etc/passwd` :
+
+        `alice:x:1001:1001:Alice Tremblay:/home/alice:/bin/bash`
+
+        Le `x` dans le champ mot de passe indique que le hash réel est dans `/etc/shadow`. Ce mécanisme existe depuis les années 1990 — avant, les hashs étaient directement dans `/etc/passwd`, ce qui les exposait à toute personne pouvant lire le fichier.
+    asides:
+      - type: note
+        text: "Le mot de passe n'est jamais stocké en clair. Le système stocke un hash — une empreinte irréversible."
+    cards:
+      - type: visual
+        label: Deux fichiers
+        visual: passwd-shadow
+      - type: example
+        label: /etc/passwd
+        text: "alice:x:1001:1001:Alice:/home/alice:/bin/bash"
+
+  - id: gestion
+    tag: Commandes
+    title: Créer et gérer utilisateurs et groupes
+    nav: Gestion
+    content: |
+      **Créer un utilisateur** — `sudo adduser bob` (interactif, crée le répertoire et demande un mot de passe).
+
+      **Changer d'utilisateur** — `su - bob` (charge l'environnement complet de bob).
+
+      **Créer un groupe** — `sudo addgroup webdev`.
+
+      **Ajouter au groupe** — `sudo usermod -aG webdev alice` (le `-a` est critique).
+    extended:
+      - |
+        `adduser` vs `useradd` : `adduser` est un script interactif (Debian/Ubuntu) qui guide la création complète. `useradd` est la commande bas niveau — elle ne crée ni le répertoire personnel ni le mot de passe par défaut. En pratique, `adduser` pour les comptes humains, `useradd` pour l'automatisation.
+      - |
+        Le tiret dans `su - bob` est important : il charge l'environnement complet de l'utilisateur cible. Sans tiret, tu changes d'identité mais tu restes dans l'environnement précédent — source de confusion.
+
+        **Le drapeau `-a`** dans `usermod -aG` signifie *append*. Sans lui, `usermod -G` **remplace** tous les groupes secondaires. Oublier `-a` peut retirer un utilisateur du groupe `sudo` et te bloquer hors du système.
+    asides:
+      - type: caution
+        text: "usermod -G (sans -a) REMPLACE les groupes. usermod -aG AJOUTE un groupe. Oublier -a peut te bloquer."
+      - type: tip
+        text: "newgrp webdev — active le groupe dans la session courante sans se déconnecter."
+    cards:
+      - type: example
+        label: Cycle complet
+        text: "adduser → addgroup → usermod -aG → groups (vérifier) → su - (tester)."
+      - type: concept
+        label: Mot clé
+        text: "Le -a de usermod -aG : append. Toujours l'inclure."
+
+  - id: rwx
+    tag: Concept clé
+    title: Permissions rwx
+    nav: rwx
+    content: |
+      Chaque fichier a trois niveaux d'accès : **propriétaire** (u), **groupe** (g), **autres** (o).
+
+      Pour chaque niveau, trois permissions : **r** (lire), **w** (écrire), **x** (exécuter ou traverser).
+
+      `ls -l index.js` → `-rwxr-xr-- 1 alice webdev` — propriétaire peut tout, le groupe peut lire/exécuter, les autres peuvent seulement lire.
+    extended:
+      - |
+        Sur un **fichier** : `r` = lire le contenu, `w` = modifier, `x` = exécuter comme programme.
+
+        Sur un **répertoire** : `r` = lister le contenu (`ls`), `w` = créer ou supprimer des fichiers à l'intérieur, `x` = traverser (`cd`) et accéder aux sous-éléments.
+
+        Un répertoire sans `x` est inaccessible même avec `r` — tu vois les noms des fichiers mais tu ne peux ni les ouvrir ni entrer dans le répertoire.
+    asides:
+      - type: caution
+        text: "Répertoire sans x = porte vitrée verrouillée. Tu vois le contenu mais tu ne peux pas y accéder."
+    cards:
+      - type: visual
+        label: Trois niveaux × trois droits
+        visual: rwx-breakdown
+      - type: visual
+        label: Fichier vs répertoire
+        visual: rwx-meaning
+
+  - id: octal
+    tag: Notation
+    title: Notation octale
+    nav: Octale
+    content: |
+      Chaque permission a une valeur : **r = 4**, **w = 2**, **x = 1**. On additionne par niveau.
+
+      `rwx` = 4+2+1 = **7**. `r-x` = 4+0+1 = **5**. `r--` = 4+0+0 = **4**.
+
+      Ainsi `rwxr-xr--` s'écrit **754**. Trois chiffres : propriétaire, groupe, autres.
+    extended:
+      - |
+        Les valeurs courantes à connaître :
+
+        **755** — standard pour les répertoires et scripts. Le propriétaire peut tout, les autres lisent et traversent.
+
+        **644** — standard pour les fichiers de contenu. Le propriétaire lit et écrit, les autres lisent seulement.
+
+        **600** — fichier privé. Seul le propriétaire peut lire et écrire. Indispensable pour les clés SSH.
+
+        **700** — répertoire ou script privé. Seul le propriétaire a accès.
+    asides:
+      - type: tip
+        text: "755 pour les répertoires, 644 pour les fichiers, 600 pour les clés SSH. Ces trois valeurs couvrent 90% des besoins."
+    cards:
+      - type: visual
+        label: Calcul
+        visual: octal-stack
+      - type: example
+        label: Valeurs courantes
+        text: "755 (répertoires), 644 (fichiers), 600 (clés privées), 700 (scripts privés)."
+
+  - id: commandes
+    tag: Commandes
+    title: chmod, chown, chgrp
+    nav: Commandes
+    content: |
+      **chmod** (*change mode*) — modifier les permissions. Deux syntaxes : symbolique (`chmod u+x script.sh`) ou octale (`chmod 755 script.sh`).
+
+      **chown** (*change owner*) — changer le propriétaire et/ou le groupe. Requiert `sudo`.
+
+      **chgrp** (*change group*) — changer le groupe uniquement. Raccourci pour `chown :groupe`.
+    extended:
+      - |
+        **Symbolique** — `chmod u+x` (ajouter exécution au propriétaire), `chmod g+rw` (ajouter lecture+écriture au groupe), `chmod o-rwx` (tout retirer aux autres), `chmod a+r` (lecture pour tous).
+
+        **Octale** — `chmod 755 script.sh`, `chmod 644 index.html`, `chmod 600 id_rsa`.
+      - |
+        **chown** — `sudo chown alice fichier.txt` (propriétaire), `sudo chown alice:webdev fichier.txt` (propriétaire + groupe), `sudo chown -R alice:webdev /var/www/` (récursif).
+
+        Seul `root` peut changer le propriétaire. Si n'importe qui pouvait s'attribuer la propriété de n'importe quel fichier, tout le modèle de permissions s'effondrerait.
+    asides:
+      - type: caution
+        text: "chmod -R 755 donne x aux fichiers (rarement voulu). Sépare : find -type d pour les répertoires, find -type f pour les fichiers."
+    cards:
+      - type: visual
+        label: Trois commandes
+        visual: chmod-chown-chgrp
+      - type: example
+        label: Mémo
+        text: "chmod = qui peut quoi. chown = à qui. chgrp = pour quel groupe."
+
+  - id: scenario
+    tag: Synthèse
+    title: "Cas pratique : configurer un site web"
+    nav: Cas pratique
+    content: |
+      Scénario complet : configurer les permissions d'un site web pour que l'équipe puisse modifier les fichiers et que Nginx puisse les servir.
+
+      Les étapes combinent tout : **addgroup** → **usermod** → **chown** → **chmod** → **setgid**.
+    extended:
+      - |
+        1. `sudo addgroup webdev` — créer le groupe.
+        2. `sudo usermod -aG webdev alice bob` — ajouter les développeurs.
+        3. `sudo chown -R alice:webdev /var/www/monsite` — propriétaire et groupe.
+        4. `sudo find … -type d -exec chmod 775` — répertoires traversables.
+        5. `sudo find … -type f -exec chmod 664` — fichiers modifiables par le groupe.
+        6. `sudo chmod g+s /var/www/monsite` — les nouveaux fichiers héritent du groupe.
+        7. `sudo usermod -aG webdev www-data` — Nginx peut lire via le groupe.
+      - |
+        Le **bit setgid** (`g+s`) sur un répertoire fait en sorte que les nouveaux fichiers créés à l'intérieur héritent du groupe du répertoire (`webdev`), plutôt que du groupe principal de celui qui les crée. Sans ça, chaque fichier créé par Alice aurait le groupe `alice`, et Bob ne pourrait pas le modifier.
+
+        C'est indispensable pour le travail collaboratif sur un serveur.
+    asides:
+      - type: tip
+        text: "chmod g+s — le bit setgid. Indispensable pour que les fichiers créés héritent du bon groupe."
+      - type: note
+        text: "Ce scénario est exactement ce que tu feras en déployant une application web sur un serveur Linux."
+    cards:
+      - type: visual
+        label: Pipeline complet
+        visual: web-scenario
+      - type: concept
+        label: Ce cours
+        text: "Les permissions Linux sont la base de la sécurité de tout serveur web."

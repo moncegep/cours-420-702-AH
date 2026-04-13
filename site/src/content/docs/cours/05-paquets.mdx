@@ -1,0 +1,284 @@
+---
+title: Gestionnaire de paquets
+description: Comprendre le rôle des paquets et de leurs gestionnaires, de l'OS au développement web.
+sidebar:
+  order: 5
+---
+
+import { Aside, Steps, Tabs, TabItem, Card, CardGrid } from '@astrojs/starlight/components';
+import ViewSwitcher from '../../../components/ViewSwitcher.astro';
+import SlidePresentation from '../../../components/Slide/SlidePresentation';
+import slideData from '../../../data/slides/paquets.yaml';
+
+
+<ViewSwitcher>
+  <SlidePresentation slot="slides" data={slideData} client:load />
+
+## Qu'est-ce qu'un paquet?
+
+Quand tu développes une application web ou mobile, tu ne pars jamais de zéro. Tu assembles des **composants logiciels** créés par d'autres : une librairie pour gérer les dates, un module pour valider des formulaires, un *framework* pour structurer ton interface. Chacun de ces composants est distribué sous forme de **paquet** (*package*) — un ensemble regroupant du code, de la documentation, des métadonnées et une liste de dépendances.
+
+Un paquet, c'est donc une **unité de distribution** : un bloc autonome qu'on peut télécharger, installer et intégrer dans un projet. Que ce soit un module Node.js, un *gem* Ruby, un *crate* Rust ou un paquet `.deb` sous Ubuntu, le principe reste le même : empaqueter du logiciel pour qu'il soit facilement partageable et réutilisable.
+
+### L'analogie du GPS
+
+Imagine ton GPS automobile. Quand tu l'achètes, il est livré avec un jeu de cartes de base. Mais ces cartes ne sont pas figées :
+
+- De nouvelles routes sont construites → tu dois **télécharger des mises à jour** pour que le GPS reste utile.
+- Le format des cartes évolue → les nouvelles cartes doivent rester **compatibles avec le logiciel** du GPS. Si tu mets à jour le logiciel, il faut parfois aussi mettre à jour les cartes — et inversement.
+- Tu voyages dans une nouvelle région → tu dois **ajouter un paquet de cartes** que tu n'avais pas au départ.
+- Certaines cartes dépendent d'autres données (points d'intérêt, limites de vitesse) → il y a des **dépendances entre paquets de données**.
+
+<Aside type="tip" title="Le parallèle avec le développement">
+Remplace « GPS » par « ton application Node.js », « cartes » par « paquets npm », et tu obtiens exactement la même dynamique : des composants qu'on ajoute, qu'on met à jour et qui doivent rester compatibles entre eux.
+</Aside>
+
+### Des paquets au niveau de l'OS
+
+Cette logique ne se limite pas au développement web. Ton **système d'exploitation** lui-même est composé de paquets. Sous Ubuntu, le navigateur Firefox, l'éditeur nano, le serveur Apache — tout est un paquet. Le noyau Linux lui-même est distribué comme un paquet.
+
+Au niveau de l'OS, un paquet contient typiquement :
+
+- Les **fichiers binaires** (les programmes exécutables)
+- Les **fichiers de configuration** par défaut
+- La **documentation** (pages `man`)
+- La **liste des dépendances** — les autres paquets requis pour fonctionner
+- Des **scripts d'installation** (pré-installation, post-installation, désinstallation)
+
+<Aside type="note" title="Paquets OS vs paquets de développement">
+Un paquet OS installe des logiciels **au niveau du système entier** (disponibles pour tous les utilisateurs). Un paquet npm ou pip installe des dépendances **au niveau d'un projet** spécifique. Les deux suivent le même principe, mais leur portée est très différente.
+</Aside>
+
+### Pourquoi un gestionnaire est nécessaire
+
+Dès que tu travailles avec plus d'une poignée de paquets, plusieurs problèmes surgissent :
+
+- **Les dépendances s'enchaînent** : le paquet A dépend de B, qui dépend de C et D. Installer A manuellement signifie trouver, télécharger et installer B, C et D dans le bon ordre.
+- **Les versions doivent être compatibles** : A a besoin de B version 2.x, mais D a besoin de B version 3.x. Qui tranche?
+- **Les mises à jour peuvent tout casser** : mettre à jour C pourrait rendre D incompatible, ce qui casserait A.
+- **La sécurité exige de la vigilance** : des failles sont découvertes régulièrement dans les paquets populaires. Il faut un moyen de savoir lesquels sont affectés.
+
+Gérer tout cela à la main est irréaliste. C'est pourquoi on délègue ce travail à un **gestionnaire de paquets**.
+
+---
+
+## Gestionnaire de paquets
+
+### Rôle et limites
+
+Un gestionnaire de paquets est un outil qui **automatise** l'installation, la mise à jour, la configuration et la suppression de paquets. Concrètement, il prend en charge :
+
+- La **résolution des dépendances** : il détermine tout ce qu'il faut installer (et dans quel ordre) pour qu'un paquet fonctionne.
+- Le **téléchargement** depuis une source fiable (un *dépôt* ou *registry*).
+- La **vérification d'intégrité** : s'assurer que le paquet n'a pas été altéré.
+- La **gestion des conflits de version** : trouver une combinaison de versions qui satisfait toutes les contraintes.
+- Le **suivi** de ce qui est installé, pour pouvoir désinstaller proprement.
+
+<Aside type="caution" title="Ce qu'un gestionnaire ne fait pas">
+Un gestionnaire de paquets ne garantit pas que le code installé est sûr ou de qualité. Il ne vérifie pas si un paquet contient du code malveillant. Il ne teste pas la compatibilité réelle entre les paquets — il se fie aux déclarations de version faites par les auteurs. La confiance repose donc largement sur l'écosystème et ses pratiques de publication.
+</Aside>
+
+### Relation avec le système d'exploitation
+
+Chaque famille d'OS a ses propres conventions et gestionnaires :
+
+<Tabs>
+  <TabItem label="Linux (Debian/Ubuntu)">
+    **`apt`** (Advanced Package Tool) gère les paquets `.deb`. Il s'appuie sur `dpkg` pour l'installation bas niveau et ajoute la résolution automatique de dépendances.
+
+    ```bash
+    sudo apt update            # Rafraîchir la liste des paquets disponibles
+    sudo apt install nginx     # Installer un paquet et ses dépendances
+    sudo apt upgrade           # Mettre à jour tous les paquets installés
+    sudo apt remove nginx      # Désinstaller un paquet
+    ```
+  </TabItem>
+  <TabItem label="Linux (Fedora/RHEL)">
+    **`dnf`** (anciennement `yum`) gère les paquets `.rpm`. Même logique, format différent.
+
+    ```bash
+    sudo dnf install httpd
+    sudo dnf update
+    sudo dnf remove httpd
+    ```
+  </TabItem>
+  <TabItem label="macOS">
+    macOS n'a pas de gestionnaire de paquets natif au sens Linux. La communauté a créé **Homebrew** (`brew`) pour combler ce manque.
+
+    ```bash
+    brew install node
+    brew upgrade
+    brew uninstall node
+    ```
+  </TabItem>
+  <TabItem label="Windows">
+    Windows a historiquement utilisé des installateurs `.msi` ou `.exe` manuels. Depuis Windows 10, **winget** offre une approche en ligne de commande.
+
+    ```powershell
+    winget install Node.js
+    winget upgrade --all
+    winget uninstall Node.js
+    ```
+  </TabItem>
+</Tabs>
+
+<Aside type="tip" title="Pertinence web">
+Quand tu configures un serveur web Linux pour déployer une application Node.js, tu utilises `apt` pour installer Node.js, nginx et d'autres outils système. Puis tu utilises `npm` pour installer les dépendances de ton application. Les deux gestionnaires coexistent, chacun à sa couche.
+</Aside>
+
+### Sources de données : les dépôts
+
+Un gestionnaire de paquets ne cherche pas les paquets « sur Internet en général ». Il consulte des **dépôts** (*repositories* ou *registries*) précis et configurés.
+
+Pour `apt` sous Ubuntu, les dépôts sont définis dans `/etc/apt/sources.list`. Chaque entrée pointe vers un serveur qui héberge des paquets vérifiés et signés. Pour npm, le *registry* par défaut est `registry.npmjs.org`.
+
+Cela implique quelques contraintes importantes :
+
+- **Un paquet qui n'est dans aucun dépôt configuré est invisible** pour le gestionnaire.
+- **Ajouter un dépôt tiers** (un PPA sous Ubuntu, un *registry* privé pour npm) introduit un risque : tu fais confiance à un éditeur externe.
+- **Les dépôts officiels privilégient la stabilité** : les versions disponibles sont souvent en retard par rapport aux dernières sorties. C'est un choix délibéré — stabilité plutôt que nouveauté.
+
+### Installation manuelle
+
+Oui, on *peut* installer un paquet sans gestionnaire. Sous Linux, tu peux télécharger un `.deb` et l'installer avec `dpkg -i mon-paquet.deb`. En JavaScript, tu peux copier directement un fichier source dans ton projet.
+
+Mais tu perds alors tous les avantages du gestionnaire :
+
+- Pas de résolution automatique de dépendances — tu dois trouver et installer chaque dépendance toi-même.
+- Pas de suivi — le gestionnaire ne sait pas que ce paquet est installé, donc il ne le mettra pas à jour et ne le désinstallera pas proprement.
+- Pas de vérification d'intégrité.
+
+<Aside type="caution" title="Quand l'installation manuelle est justifiée">
+L'installation manuelle est parfois nécessaire : paquet propriétaire non disponible dans les dépôts, version très spécifique requise, ou environnement sans accès réseau. Mais c'est l'exception, pas la règle. Chaque paquet installé manuellement est un paquet que tu devras maintenir manuellement.
+</Aside>
+
+### Savoir quoi installer ou mettre à jour
+
+Comment sais-tu quel paquet installer pour répondre à un besoin? Et comment sais-tu quand un paquet installé doit être mis à jour?
+
+Pour **trouver un paquet**, tu disposes de plusieurs moyens :
+
+- `apt search <mot-clé>` ou `npm search <mot-clé>` pour chercher dans les dépôts.
+- La documentation de ton *framework* ou de ta plateforme, qui recommande souvent des paquets spécifiques.
+- Les communautés (forums, Stack Overflow, GitHub) où les développeurs partagent leurs recommandations.
+
+Pour **savoir quoi mettre à jour** :
+
+- `apt list --upgradable` affiche les paquets pour lesquels une nouvelle version existe dans les dépôts.
+- `npm outdated` compare les versions installées avec les versions disponibles.
+- `npm audit` identifie les paquets qui ont des **vulnérabilités de sécurité connues** — un outil essentiel pour la maintenance d'une application web.
+
+### Considérations lors d'une mise à jour
+
+Mettre à jour un paquet n'est jamais une opération anodine. Voici les questions à te poser avant de lancer la commande :
+
+<CardGrid>
+  <Card title="Quel type de changement?">
+    Une mise à jour **mineure** (1.2.3 → 1.2.4) corrige des bogues. Une mise à jour **majeure** (1.x → 2.0) peut changer l'interface du paquet et casser ton code. Le [versionnement sémantique](https://semver.org/lang/fr/) (*semver*) encode cette information dans le numéro de version.
+  </Card>
+  <Card title="Impact sur les dépendances?">
+    Mettre à jour un paquet peut forcer la mise à jour de ses propres dépendances — ou entrer en conflit avec d'autres paquets de ton projet. Le gestionnaire tentera de résoudre ces conflits, mais il n'y arrive pas toujours.
+  </Card>
+  <Card title="Environnement de test?">
+    En production, on ne met jamais à jour directement. On teste d'abord dans un environnement isolé (staging) pour vérifier que rien ne casse. C'est vrai autant pour les paquets OS d'un serveur que pour les dépendances npm d'une application.
+  </Card>
+  <Card title="Urgence de sécurité?">
+    Si `npm audit` ou un bulletin de sécurité signale une vulnérabilité critique, la mise à jour devient urgente — même si elle comporte des risques. Le risque de *ne pas* mettre à jour est alors plus grand.
+  </Card>
+</CardGrid>
+
+---
+
+## Analyse du gestionnaire npm
+
+npm (*Node Package Manager*) est le gestionnaire de paquets par défaut de l'écosystème Node.js. Il est installé automatiquement avec Node.js et donne accès au plus grand *registry* de paquets au monde.
+
+### Forces
+
+- **Écosystème massif** : plus de deux millions de paquets disponibles. Peu importe le problème, il existe probablement un paquet pour le résoudre.
+- **Intégré à Node.js** : aucune installation supplémentaire. `npm` est disponible dès que Node.js est installé.
+- **`package.json` comme contrat** : le fichier `package.json` déclare explicitement les dépendances, les scripts, les métadonnées. N'importe qui peut cloner un projet et exécuter `npm install` pour obtenir le même environnement.
+- **`package-lock.json` pour la reproductibilité** : ce fichier fige les versions exactes de chaque dépendance (et de leurs sous-dépendances), ce qui garantit que deux installations produisent le même résultat.
+- **Registre public et gratuit** : publier un paquet est accessible à tout le monde, ce qui favorise le partage.
+
+### Faiblesses
+
+- **Performance historiquement lente** : l'installation séquentielle des premières versions de npm était notoirement lente pour les gros projets. Les versions récentes ont amélioré la situation, mais la réputation persiste.
+- **Arbre de dépendances profond** : un projet Node.js typique peut avoir des centaines, voire des milliers de sous-dépendances. Le fameux dossier `node_modules` peut contenir des dizaines de milliers de fichiers.
+- **Sécurité par confiance** : n'importe qui peut publier un paquet. Des cas de *typosquatting* (paquets malveillants avec des noms similaires à des paquets populaires) et d'injection de code malveillant dans des paquets légitimes ont été documentés.
+- **Gestion de l'espace disque** : chaque projet a sa propre copie de `node_modules`. Dix projets utilisant React signifient dix copies de React sur ton disque.
+
+### Alternatives et leurs motivations
+
+Les limitations de npm ont motivé la création d'outils alternatifs, chacun ciblant un problème précis :
+
+<Tabs>
+  <TabItem label="Yarn">
+    Créé par Facebook (2016) en réponse aux problèmes de performance et de reproductibilité de npm à l'époque. Yarn a introduit le *lockfile* et l'installation parallèle — deux innovations que npm a ensuite adoptées. La version « Yarn Berry » (v2+) propose un mode *Plug'n'Play* qui élimine complètement le dossier `node_modules`.
+  </TabItem>
+  <TabItem label="pnpm">
+    Résout le problème de duplication de `node_modules` en utilisant un **store global** avec des liens symboliques. Dix projets utilisant React partagent une seule copie sur le disque. Plus rapide et plus économe en espace que npm et Yarn classique.
+  </TabItem>
+  <TabItem label="Bun">
+    Un *runtime* JavaScript complet (alternatif à Node.js) qui inclut son propre gestionnaire de paquets. L'objectif est la **vitesse brute** : installation des dépendances en une fraction du temps de npm. Compatible avec `package.json` et le *registry* npm.
+  </TabItem>
+  <TabItem label="Deno">
+    Créé par Ryan Dahl (le créateur original de Node.js), Deno adopte une approche radicalement différente : **pas de `node_modules`**, pas de `package.json` par défaut. Les dépendances sont importées directement par URL. Depuis Deno 2, une compatibilité avec npm a été ajoutée pour faciliter la transition.
+  </TabItem>
+</Tabs>
+
+### Le problème de fond
+
+Au-delà des outils, la prolifération de gestionnaires de paquets révèle un problème systémique plus profond dans l'écosystème logiciel :
+
+- **Dépendances en cascade** : un paquet simple peut tirer des centaines de sous-dépendances. Chacune est maintenue par une personne ou une équipe différente, avec ses propres priorités et son propre rythme. La moindre rupture dans cette chaîne peut affecter des millions de projets (l'incident [*left-pad*](https://en.wikipedia.org/wiki/Npm_left-pad_incident) en 2016 en est l'illustration célèbre).
+- **Besoins divergents** : les auteurs de paquets veulent innover et faire évoluer leur API. Les consommateurs veulent de la stabilité. Ces deux objectifs sont en tension permanente, et le versionnement sémantique est une convention fragile pour les réconcilier.
+- **Manque de communication** : quand l'auteur d'un paquet décide de changer son interface, les mainteneurs des paquets qui en dépendent ne sont pas nécessairement prévenus. Les ruptures se propagent silencieusement.
+- **Absence de régulation centralisée** : contrairement aux dépôts Linux officiels (où des mainteneurs sélectionnent et testent les paquets), les *registries* comme npm sont largement ouverts. Cette ouverture favorise l'innovation mais expose à des risques de qualité et de sécurité.
+
+<Aside type="note" title="Réflexion">
+Ce problème n'est pas propre à JavaScript. Il existe dans tous les écosystèmes : pip (Python), Cargo (Rust), Maven (Java), Composer (PHP). La question fondamentale est : **comment coordonner le travail de millions de développeurs indépendants qui ne se connaissent pas, tout en garantissant que l'assemblage de leurs contributions reste fonctionnel et sécuritaire?** Aucun outil n'a encore résolu cette question de manière définitive.
+</Aside>
+
+---
+
+## Pour aller plus loin : créer ou contribuer à un paquet
+
+<details>
+<summary>Comment créer ton propre paquet npm?</summary>
+
+La création d'un paquet npm suit un processus relativement simple :
+
+<Steps>
+1. **Initialiser le projet** avec `npm init`, qui crée un `package.json` avec le nom, la version, la description et le point d'entrée de ton paquet.
+
+2. **Écrire le code** du module que tu veux partager. Organise-le de manière à exposer une interface claire via `module.exports` ou des exports ES modules.
+
+3. **Documenter** ton paquet : un `README.md` expliquant ce que fait le paquet, comment l'installer et comment l'utiliser. C'est ce que les autres développeurs verront en premier.
+
+4. **Tester** ton paquet localement avec `npm link`, qui crée un lien symbolique permettant de l'utiliser dans un autre projet sans le publier.
+
+5. **Publier** avec `npm publish`. Tu as besoin d'un compte sur npmjs.com. Une fois publié, ton paquet est disponible pour le monde entier.
+
+6. **Maintenir** : corriger les bogues, répondre aux *issues*, publier des mises à jour en respectant le versionnement sémantique.
+</Steps>
+
+</details>
+
+<details>
+<summary>Contribuer à un paquet existant</summary>
+
+Contribuer à un paquet *open source* est une excellente façon d'apprendre et de participer à l'écosystème :
+
+- **Signaler un bogue** (*issue*) : décrire précisément le problème, les étapes pour le reproduire et l'environnement concerné.
+- **Proposer une correction** (*pull request*) : *forker* le dépôt, créer une branche, appliquer la correction, écrire des tests, et soumettre ta proposition.
+- **Améliorer la documentation** : c'est souvent le point faible des paquets et une contribution très appréciée.
+- **Participer aux discussions** : les dépôts GitHub ont souvent une section *Discussions* où les décisions d'architecture sont débattues.
+
+<Aside type="tip" title="Pertinence professionnelle">
+Des contributions visibles sur GitHub (même modestes) constituent un portfolio concret de tes compétences. Dans le domaine du développement web, les recruteurs consultent régulièrement les profils GitHub des candidats.
+</Aside>
+
+</details>
+
+</ViewSwitcher>

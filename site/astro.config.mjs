@@ -19,13 +19,16 @@ export default defineConfig({
 			customCss: [
 				'./src/styles/custom.css',
 			],
+			lastUpdated: true,
 			sidebar: [
 				{
 					label: 'Notes de cours',
 					items: [
 						{ label: 'Introduction', slug: 'cours/01-introduction' },
 						{ label: 'Fichiers', slug: 'cours/03-fichiers' },
-						{ label: 'Virtualisation', slug: 'cours/04-virtualisation' }
+						{ label: 'Virtualisation', slug: 'cours/04-virtualisation' },
+						{ label: 'Gestionnaire de paquets', slug: 'cours/05-paquets' },
+						{ label: 'Utilisateurs et permissions', slug: 'cours/06-utilisateurs-permissions' },
 					]
 				},
 				{
