@@ -37,7 +37,8 @@ export default defineConfig({
 						{ label: 'Linux et ligne de commande', slug: 'activites/01-terminal' },
 						{ label: 'Fichiers et logs', slug: 'activites/02-fichiers-et-logs' },
 						{ label: 'Modélisation ascenseur', slug: 'activites/03-modelisation-ascenseur' },
-						{ label: 'Installation Linux', slug: 'activites/04-installation-linux' }
+						{ label: 'Installation Linux', slug: 'activites/04-installation-linux' },
+						{ label: 'Permissions à la FAAQ', slug: 'activites/05-faaq' }
 					],
 				},
 				{

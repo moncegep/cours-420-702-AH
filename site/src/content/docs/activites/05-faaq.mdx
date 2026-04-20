@@ -1,0 +1,403 @@
+---
+title: "Activité pratique : permissions à la FAAQ"
+description: Mettre en place un modèle d'accès à trois niveaux (fédération, clubs, membres) pour une plateforme de gestion de fichiers.
+sidebar:
+  order: 7
+---
+
+import { Aside, Steps, Tabs, TabItem, Card, CardGrid } from '@astrojs/starlight/components';
+
+## Contexte
+
+La **Fédération des astronomes amateurs du Québec** (FAAQ) regroupe une quinzaine de clubs à travers la province. 
+Elle veut mettre en place une plateforme Linux pour organiser ses documents — comptes rendus d'observation, calendriers, budgets, politiques internes.
+
+Trois types d'utilisateurs doivent avoir des accès différents :
+
+<CardGrid>
+  <Card title="Administration (fédération)">
+    Gère les documents officiels, les budgets, les politiques. Accès total à l'ensemble de la plateforme.
+  </Card>
+  <Card title="Clubs locaux">
+    Chaque club (Montréal, Québec, Sherbrooke…) a son propre espace de travail. Les membres d'un club peuvent y écrire. Les autres clubs n'y ont pas accès.
+  </Card>
+  <Card title="Membres individuels">
+    Chaque membre a un dossier personnel privé. Tous les membres peuvent consulter la zone publique de la fédération (calendrier, événements).
+  </Card>
+</CardGrid>
+
+Ton mandat : configurer les utilisateurs, les groupes et les permissions pour que ce modèle à trois niveaux fonctionne correctement.
+
+<Aside type="note" title="Prérequis">
+Cette activité suppose que tu as complété le chapitre théorique sur les utilisateurs et permissions. Tu dois avoir accès à une VM Linux (Ubuntu/Debian) avec les privilèges `sudo`.
+
+Deux points pratiques à connaître avant de commencer :
+- **`adduser` est interactif** : il va te demander un mot de passe et quelques informations optionnelles (nom complet, téléphone — tu peux laisser vides en appuyant sur Entrée). Choisis un mot de passe simple, tu vas en avoir besoin pour `su`.
+- **`su - <utilisateur>` demande le mot de passe** de l'utilisateur cible. Si tu ne veux pas retenir quatre mots de passe, utilise plutôt `sudo su - <utilisateur>` : ton mot de passe sudo suffit.
+</Aside>
+
+{/* ### Préparation de la VM
+
+Si tu as déjà fait des essais, commence par nettoyer pour repartir sur une base propre :
+
+<details>
+<summary>Script de nettoyage (optionnel)</summary>
+
+```bash
+# Supprimer les utilisateurs de l'activité s'ils existent
+for user in fed_admin alice bob carol; do
+    sudo deluser --remove-home "$user" 2>/dev/null
+done
+
+# Supprimer les groupes
+for grp in faaq_admin faaq_membres club_mtl club_qc; do
+    sudo delgroup "$grp" 2>/dev/null
+done
+
+# Supprimer la structure
+sudo rm -rf /faaq
+```
+
+</details> */}
+
+---
+
+## Phase 1 — Fondations
+
+### Exercice 1 — Modifier les permissions d'un fichier
+
+Tu vas créer un fichier et lui appliquer plusieurs permissions, en notation **symbolique** puis **octale**.
+
+<Steps>
+1. Crée un fichier `test_permissions.txt` dans ton dossier personnel avec du contenu quelconque.
+
+2. Vérifie ses permissions initiales avec `ls -l`.
+
+3. Utilise la notation **symbolique** pour :
+   - Ajouter l'exécution pour le propriétaire
+   - Retirer la lecture pour les autres
+   - Donner l'écriture au groupe
+
+4. Vérifie le résultat après chaque opération.
+
+5. Réinitialise ensuite le fichier à `rw-r--r--` en utilisant la notation **octale**.
+</Steps>
+
+<details>
+<summary>Solution</summary>
+
+```bash
+# 1. Créer le fichier
+echo "Test de permissions FAAQ" > ~/test_permissions.txt
+
+# 2. Vérifier l'état initial
+ls -l ~/test_permissions.txt
+# -rw-r--r-- 1 toi toi 23 jan 15 10:30 test_permissions.txt
+
+# 3a. Ajouter exécution pour le propriétaire
+chmod u+x ~/test_permissions.txt
+ls -l ~/test_permissions.txt
+# -rwxr--r--
+
+# 3b. Retirer la lecture pour les autres
+chmod o-r ~/test_permissions.txt
+ls -l ~/test_permissions.txt
+# -rwxr-----
+
+# 3c. Donner l'écriture au groupe
+chmod g+w ~/test_permissions.txt
+ls -l ~/test_permissions.txt
+# -rwxrw----
+
+# 5. Réinitialiser en octal
+chmod 644 ~/test_permissions.txt
+ls -l ~/test_permissions.txt
+# -rw-r--r--
+```
+
+</details>
+
+<Aside type="tip" title="Vérification rapide">
+Pour chaque ligne `-rwxrw----`, calcule mentalement l'octal : `rwx` = 7, `rw-` = 6, `---` = 0 → **760**. Cet automatisme est indispensable pour la suite.
+</Aside>
+
+---
+
+## Phase 2 — Mise en place de la FAAQ
+
+### Exercice 2 — Créer les utilisateurs et les groupes
+
+Tu dois maintenant créer les comptes pour les différents rôles de la plateforme FAAQ.
+
+**Utilisateurs à créer :**
+
+| Utilisateur | Rôle |
+|---|---|
+| `fed_admin` | Administrateur de la fédération |
+| `alice` | Membre du club de Montréal |
+| `bob` | Membre du club de Montréal |
+| `carol` | Membre du club de Québec |
+
+**Groupes à créer :**
+
+| Groupe | Contient |
+|---|---|
+| `faaq_admin` | Les administrateurs de la fédération |
+| `faaq_membres` | Tous les membres de la FAAQ |
+| `club_mtl` | Les membres du club de Montréal |
+| `club_qc` | Les membres du club de Québec |
+
+**Appartenances attendues :**
+
+- `fed_admin` → `faaq_admin`, `faaq_membres`
+- `alice` → `club_mtl`, `faaq_membres`
+- `bob` → `club_mtl`, `faaq_membres`
+- `carol` → `club_qc`, `faaq_membres`
+
+<Steps>
+1. Crée les quatre utilisateurs avec `adduser`. Choisis un mot de passe simple (tu en auras besoin pour `su`).
+
+2. Crée les quatre groupes avec `addgroup`.
+
+3. Ajoute chaque utilisateur à ses groupes secondaires avec `usermod -aG`.
+
+4. Vérifie les appartenances avec la commande `groups <utilisateur>`.
+</Steps>
+
+<details>
+<summary>Solution</summary>
+
+```bash
+# 1. Créer les utilisateurs
+sudo adduser fed_admin
+sudo adduser alice
+sudo adduser bob
+sudo adduser carol
+
+# 2. Créer les groupes
+sudo addgroup faaq_admin
+sudo addgroup faaq_membres
+sudo addgroup club_mtl
+sudo addgroup club_qc
+
+# 3. Ajouter aux groupes secondaires (attention au -a!)
+sudo usermod -aG faaq_admin,faaq_membres fed_admin
+sudo usermod -aG club_mtl,faaq_membres alice
+sudo usermod -aG club_mtl,faaq_membres bob
+sudo usermod -aG club_qc,faaq_membres carol
+
+# 4. Vérifier
+groups fed_admin
+# fed_admin : fed_admin faaq_admin faaq_membres
+
+groups alice
+# alice : alice club_mtl faaq_membres
+
+getent group faaq_membres
+# faaq_membres:x:1005:fed_admin,alice,bob,carol
+
+getent group club_mtl
+# club_mtl:x:1006:alice,bob
+```
+
+</details>
+
+<Aside type="caution" title="N'oublie jamais le -a">
+`usermod -G club_mtl alice` (sans `-a`) **remplace** tous les groupes secondaires d'alice. Elle sort alors de `faaq_membres` et ne peut plus rien faire. Le `-a` (*append*) est critique.
+</Aside>
+
+### Exercice 3 — Construire la structure de dossiers
+
+Crée la hiérarchie suivante sous `/faaq` :
+
+```
+/faaq/
+├── admin/              (zone administration, privée)
+├── public/             (lisible par tous les membres)
+├── clubs/
+│   ├── montreal/       (privé au club de Montréal)
+│   └── quebec/         (privé au club de Québec)
+└── membres/
+    ├── alice/
+    ├── bob/
+    └── carol/
+```
+
+<Steps>
+1. Crée tous les répertoires en une seule commande avec `mkdir -p`.
+
+2. Crée quelques fichiers de démonstration dans chaque zone (par exemple `/faaq/admin/budget.txt`, `/faaq/public/calendrier.md`).
+
+3. Vérifie la structure avec `ls -R /faaq` ou `tree /faaq` (si `tree` est installé).
+</Steps>
+
+<details>
+<summary>Solution</summary>
+
+```bash
+# 1. Créer la structure complète
+sudo mkdir -p /faaq/{admin,public,clubs/{montreal,quebec},membres/{alice,bob,carol}}
+
+# 2. Ajouter du contenu de démonstration
+sudo bash -c 'echo "Budget 2025 - confidentiel" > /faaq/admin/budget.txt'
+sudo bash -c 'echo "Politique de confidentialité" > /faaq/admin/politique.md'
+sudo bash -c 'echo "Calendrier des observations publiques" > /faaq/public/calendrier.md'
+sudo bash -c 'echo "Liste des événements" > /faaq/public/evenements.md'
+
+# 3. Vérifier
+ls -R /faaq
+```
+
+</details>
+
+### Exercice 4 — Appliquer le modèle de permissions
+
+C'est l'exercice central. Tu dois configurer les propriétaires, les groupes et les permissions de chaque répertoire pour respecter les règles d'accès.
+
+**Règles à implémenter :**
+
+| Chemin | Propriétaire | Groupe | Règle d'accès |
+|---|---|---|---|
+| `/faaq` | `root` | `faaq_membres` | Seuls les membres peuvent entrer |
+| `/faaq/admin` | `fed_admin` | `faaq_admin` | Admin uniquement, lecture + écriture pour le groupe |
+| `/faaq/public` | `fed_admin` | `faaq_membres` | Tous les membres lisent, seul l'admin modifie |
+| `/faaq/clubs` | `root` | `faaq_membres` | Traversable par tous les membres |
+| `/faaq/clubs/montreal` | `fed_admin` | `club_mtl` | Seuls les membres du club de Montréal |
+| `/faaq/clubs/quebec` | `fed_admin` | `club_qc` | Seuls les membres du club de Québec |
+| `/faaq/membres` | `root` | `faaq_membres` | Traversable par tous les membres |
+| `/faaq/membres/alice` | `alice` | `alice` | Strictement privé |
+| `/faaq/membres/bob` | `bob` | `bob` | Strictement privé |
+| `/faaq/membres/carol` | `carol` | `carol` | Strictement privé |
+
+<Steps>
+1. Utilise `chown` pour définir les propriétaires et groupes.
+
+2. Applique les permissions avec `chmod` (en octal).
+
+3. Vérifie chaque répertoire avec `ls -ld`.
+</Steps>
+
+<details>
+<summary>Solution</summary>
+
+```bash
+# 1. Propriétaires et groupes
+sudo chown root:faaq_membres /faaq
+sudo chown -R fed_admin:faaq_admin /faaq/admin
+sudo chown -R fed_admin:faaq_membres /faaq/public
+sudo chown root:faaq_membres /faaq/clubs
+sudo chown fed_admin:club_mtl /faaq/clubs/montreal
+sudo chown fed_admin:club_qc /faaq/clubs/quebec
+sudo chown root:faaq_membres /faaq/membres
+sudo chown alice:alice /faaq/membres/alice
+sudo chown bob:bob /faaq/membres/bob
+sudo chown carol:carol /faaq/membres/carol
+
+# 2. Permissions
+sudo chmod 750 /faaq                       # rwxr-x--- membres seulement
+sudo chmod 770 /faaq/admin                 # rwxrwx--- admin + groupe écrivent
+sudo chmod 660 /faaq/admin/*               # rw-rw---- fichiers admin
+sudo chmod 755 /faaq/public                # rwxr-xr-x
+sudo chmod 644 /faaq/public/*              # rw-r--r--
+sudo chmod 755 /faaq/clubs                 # traversable
+sudo chmod 770 /faaq/clubs/montreal        # rwxrwx--- club seulement
+sudo chmod 770 /faaq/clubs/quebec          # rwxrwx---
+sudo chmod 755 /faaq/membres               # traversable
+sudo chmod 700 /faaq/membres/alice         # privé
+sudo chmod 700 /faaq/membres/bob
+sudo chmod 700 /faaq/membres/carol
+
+# 3. Vérification
+ls -ld /faaq /faaq/*/ /faaq/clubs/*/ /faaq/membres/*/
+```
+
+</details>
+
+<Aside type="tip" title="Pourquoi 750 sur /faaq et pas 755?">
+Avec `750`, seuls les utilisateurs du groupe `faaq_membres` (ou root) peuvent entrer dans `/faaq`. Un utilisateur système (comme `www-data` s'il n'est pas membre) ne voit rien. C'est une **barrière à l'entrée** qui simplifie la suite : à l'intérieur, on peut se permettre des permissions plus ouvertes sachant que seuls les membres y ont accès.
+</Aside>
+
+---
+
+## Phase 3 — Validation
+
+### Exercice 5 — Se mettre dans la peau de chaque utilisateur
+
+Les permissions sont en place. Il faut maintenant **valider** qu'elles fonctionnent comme prévu. Pour chaque utilisateur, tu vas vérifier ce qu'il peut et ne peut pas faire.
+
+Utilise `su - <utilisateur>` pour changer d'identité. N'oublie pas le tiret — il charge l'environnement complet.
+
+**Tests à effectuer pour chaque utilisateur :**
+
+<Tabs>
+  <TabItem label="fed_admin">
+    ```bash
+    su - fed_admin
+
+    # Accès admin
+    cat /faaq/admin/budget.txt          # ✅ doit fonctionner
+    echo "Note" >> /faaq/admin/notes.txt  # ✅ doit fonctionner
+
+    # Accès public
+    cat /faaq/public/calendrier.md      # ✅ doit fonctionner
+    echo "Nouvel événement" >> /faaq/public/evenements.md  # ✅ doit fonctionner
+
+    # Accès clubs (fed_admin possède les dossiers mais n'est pas dans les groupes de club)
+    ls /faaq/clubs/montreal             # ✅ propriétaire du dossier
+    echo "test" > /faaq/clubs/montreal/admin.txt  # ✅
+
+    exit
+    ```
+  </TabItem>
+  <TabItem label="alice (club Montréal)">
+    ```bash
+    su - alice
+
+    # Accès admin (INTERDIT)
+    cat /faaq/admin/budget.txt          # ❌ Permission denied
+    ls /faaq/admin                      # ❌ Permission denied
+
+    # Accès public (lecture seule)
+    cat /faaq/public/calendrier.md      # ✅
+    echo "hack" >> /faaq/public/evenements.md  # ❌ Permission denied
+
+    # Club Montréal (écriture autorisée)
+    cd /faaq/clubs/montreal             # ✅
+    echo "Observation de Jupiter" > obs-alice.txt  # ✅
+
+    # Club Québec (INTERDIT)
+    ls /faaq/clubs/quebec               # ❌ Permission denied
+
+    # Dossier personnel
+    echo "Mes notes" > /faaq/membres/alice/notes.txt  # ✅
+
+    # Dossier d'un autre membre (INTERDIT)
+    ls /faaq/membres/bob                # ❌ Permission denied
+
+    exit
+    ```
+  </TabItem>
+  <TabItem label="carol (club Québec)">
+    ```bash
+    su - carol
+
+    # Accès public
+    cat /faaq/public/calendrier.md      # ✅
+
+    # Club Québec (autorisé)
+    echo "Réunion du club" > /faaq/clubs/quebec/reunion.txt  # ✅
+
+    # Club Montréal (INTERDIT — carol n'est pas membre)
+    ls /faaq/clubs/montreal             # ❌ Permission denied
+    cd /faaq/clubs/montreal             # ❌ Permission denied
+
+    exit
+    ```
+  </TabItem>
+</Tabs>
+
+<Aside type="caution" title="Important">
+Si un test « ❌ doit échouer » **réussit** ou inversement, tes permissions ne sont pas correctes. Reviens à l'exercice 5 et corrige avant de continuer. Pour comprendre pourquoi ça ne fonctionne pas, relis la ligne `ls -ld` du dossier concerné et décortique les permissions.
+</Aside>
+
+---

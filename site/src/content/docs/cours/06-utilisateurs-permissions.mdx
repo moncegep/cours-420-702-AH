@@ -9,10 +9,7 @@ import { Aside, Steps, Tabs, TabItem, Card, CardGrid } from '@astrojs/starlight/
 
 ## L'utilisateur en Linux
 
-Sur ton ordinateur personnel, tu es probablement le seul à l'utiliser. 
-Tu ouvres, modifies et supprimes n'importe quel fichier sans te poser de questions. 
-Sous Linux, et particulièrement sur un **serveur web**, bénéficier d'autant de liberté 
-pourrait s'avérer dangereux.
+Sur ton ordinateur personnel, tu es probablement le seul à l'utiliser. Tu ouvres, modifies et supprimes n'importe quel fichier sans te poser de questions. Sous Linux — et particulièrement sur un **serveur web** — cette liberté totale serait dangereuse.
 
 Linux est un système **multi-utilisateurs** : plusieurs personnes (ou programmes) peuvent l'utiliser simultanément, chacun avec son propre espace et ses propres droits. Le système doit savoir **qui fait quoi** pour protéger les fichiers des uns contre les erreurs (ou la curiosité) des autres.
 
@@ -43,7 +40,7 @@ L'utilisateur `root` (UID 0) est le **superutilisateur**. Il peut tout faire : l
 
 ### Le problème de root
 
-Si `root` peut tout faire, pourquoi ne pas toujours travailler en tant que root? Parce qu'un pouvoir illimité rend chaque erreur catastrophique. Un `rm -rf /` accidentel en tant qu'utilisateur normal ne fait pas grand-chose — le système refuse. En tant que `root`, il efface tout.
+Si `root` peut tout faire, pourquoi ne pas toujours travailler en tant que root? Parce qu'un pouvoir illimité rend chaque erreur catastrophique. Une faute de frappe comme `rm -rf /etc/ssh/` en tant qu'utilisateur normal te renverra un `Permission denied` — le système te protège. En tant que `root`, le dossier est effacé immédiatement, et ton serveur SSH ne fonctionne plus.
 
 La solution de Linux : tu travailles avec un **compte ordinaire** au quotidien, et tu élèves tes privilèges **uniquement quand c'est nécessaire**, grâce à `sudo`.
 
@@ -98,7 +95,7 @@ Linux crée automatiquement des utilisateurs pour ses propres services : `www-da
 
 ### Où sont stockés les mots de passe?
 
-Les mots de passe ne sont **pas** dans `/etc/passwd` (malgré le nom). Ils sont stockés sous forme de **hash** dans `/etc/shadow`, un fichier lisible uniquement par `root`. Cette séparation est une mesure de sécurité : `/etc/passwd` doit être lisible par tous (les programmes en ont besoin pour associer les UID aux noms), mais les mots de passe doivent rester protégés.
+Les mots de passe ne sont **pas** dans `/etc/passwd` (malgré le nom). Ils sont stockés sous forme de **hash** dans `/etc/shadow`, un fichier avec des permissions restrictives (`640 root:shadow`) qui le rend inaccessible aux utilisateurs ordinaires. Cette séparation est une mesure de sécurité : `/etc/passwd` doit être lisible par tous (les programmes en ont besoin pour associer les UID aux noms), mais les hashs de mots de passe doivent rester protégés — seuls `root` et les quelques services système du groupe `shadow` (comme `login` ou `sshd`) peuvent les lire.
 
 ---
 
@@ -293,14 +290,18 @@ Ainsi, `rwxr-xr--` s'écrit **754** en notation octale.
 `chown` (*change owner*) modifie le propriétaire et/ou le groupe d'un fichier.
 
 ```bash
-sudo chown alice fichier.txt            # Change le propriétaire
+sudo chown alice fichier.txt            # Change le propriétaire (requiert sudo)
 sudo chown alice:webdev fichier.txt     # Change propriétaire ET groupe
-sudo chown :webdev fichier.txt          # Change seulement le groupe
 sudo chown -R alice:webdev /var/www/    # Récursif sur tout le répertoire
+
+chown :webdev fichier.txt               # Change seulement le groupe (peut se faire sans sudo
+                                        # si tu possèdes le fichier et es dans webdev)
 ```
 
-<Aside type="note" title="Pourquoi sudo?">
-Seul `root` peut changer le propriétaire d'un fichier. C'est logique : si n'importe qui pouvait s'attribuer la propriété de n'importe quel fichier, tout le modèle de permissions s'effondrerait.
+<Aside type="note" title="Quand est-ce que sudo est requis?">
+Seul `root` peut **changer le propriétaire** d'un fichier. Sans cette règle, n'importe qui pourrait s'attribuer la propriété de n'importe quel fichier, ce qui ferait s'effondrer tout le modèle de permissions.
+
+Par contre, tu peux **changer le groupe** d'un fichier sans sudo, à deux conditions : tu dois être le propriétaire du fichier, et tu dois être membre du groupe cible. C'est ce qui permet à un développeur de faire `chgrp webdev index.html` sur ses propres fichiers dans `/var/www/`.
 </Aside>
 
 ### chgrp — changer le groupe
@@ -308,13 +309,14 @@ Seul `root` peut changer le propriétaire d'un fichier. C'est logique : si n'imp
 `chgrp` (*change group*) modifie uniquement le groupe associé à un fichier. C'est un raccourci pour `chown :groupe`.
 
 ```bash
-sudo chgrp webdev index.js             # Change le groupe du fichier
-sudo chgrp -R webdev /var/www/monsite  # Récursif
+chgrp webdev index.js                  # Change le groupe (si tu possèdes et es membre)
+sudo chgrp webdev /etc/nginx/nginx.conf  # sudo requis si tu ne possèdes pas le fichier
+chgrp -R webdev /var/www/monsite       # Récursif
 ```
 
 ### Cas pratique : configurer un site web
 
-Voici un scénario complet qui combine toutes les commandes. Tu configures les permissions d'un site web pour que l'équipe de développement puisse modifier les fichiers, et que le serveur web puisse les servir.
+Voici un scénario complet qui combine toutes les commandes. Tu configures les permissions d'un site web pour que l'équipe de développement puisse modifier les fichiers, et que le serveur web (`www-data`) puisse les lire pour les servir aux visiteurs.
 
 <details>
 <summary>Solution complète</summary>
@@ -330,23 +332,26 @@ sudo usermod -aG webdev bob
 # 3. Définir le propriétaire et le groupe du site
 sudo chown -R alice:webdev /var/www/monsite
 
-# 4. Permissions : propriétaire et groupe peuvent lire/écrire,
-#    les autres (dont www-data) peuvent seulement lire
-# Répertoires : 775 (rwxrwxr-x) — traversable par tous
-sudo find /var/www/monsite -type d -exec chmod 775 {} \;
-# Fichiers : 664 (rw-rw-r--) — modifiables par le groupe
+# 4. Appliquer les permissions
+#    — Répertoires : 2775 (rwxrwxr-x + setgid) pour que les nouveaux
+#      fichiers héritent du groupe webdev
+sudo find /var/www/monsite -type d -exec chmod 2775 {} \;
+#    — Fichiers : 664 (rw-rw-r--) — modifiables par le groupe, lisibles par tous
 sudo find /var/www/monsite -type f -exec chmod 664 {} \;
-
-# 5. S'assurer que les nouveaux fichiers héritent du groupe
-sudo chmod g+s /var/www/monsite
-
-# 6. Ajouter www-data au groupe pour que Nginx puisse lire
-sudo usermod -aG webdev www-data
-sudo systemctl restart nginx
 ```
+
+Avec cette configuration :
+
+- alice et bob peuvent modifier les fichiers (membres du groupe `webdev`)
+- `www-data` peut lire les fichiers en tant qu'« autre » (permissions `r--` pour tous)
+- Les nouveaux fichiers créés par alice ou bob hériteront automatiquement du groupe `webdev` grâce à `setgid` sur les répertoires
 
 </details>
 
-<Aside type="tip" title="Le bit setgid (g+s)">
-Le `chmod g+s` sur un répertoire fait en sorte que les nouveaux fichiers créés à l'intérieur héritent automatiquement du groupe du répertoire (ici `webdev`), plutôt que du groupe principal de l'utilisateur qui les crée. Indispensable pour le travail collaboratif.
+<Aside type="tip" title="Pourquoi ne pas ajouter www-data au groupe webdev?">
+On pourrait être tenté d'ajouter `www-data` au groupe `webdev` pour « lui donner accès ». Ce serait une mauvaise pratique : avec les permissions du groupe à `rw` (pour permettre aux développeurs d'écrire), le serveur web se retrouverait aussi avec le droit de **modifier** les fichiers qu'il sert. Or, un serveur web bien configuré ne devrait normalement pas pouvoir réécrire ses propres fichiers — en cas de compromission, un attaquant ne peut alors pas modifier le site. Avec notre configuration à `664`, `www-data` lit les fichiers en tant qu'« autre » avec un accès strictement en lecture. C'est plus simple ET plus sécuritaire.
+</Aside>
+
+<Aside type="note" title="Le bit setgid (g+s) dans 2775">
+Le `2` au début de `2775` active le **bit setgid** sur le répertoire. Les nouveaux fichiers créés à l'intérieur héritent automatiquement du groupe du répertoire (ici `webdev`), plutôt que du groupe principal de l'utilisateur qui les crée. Indispensable pour le travail collaboratif. Sans setgid, un fichier créé par alice aurait le groupe `alice` et bob ne pourrait pas le modifier.
 </Aside>
