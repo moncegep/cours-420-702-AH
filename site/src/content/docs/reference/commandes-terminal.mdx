@@ -3,6 +3,7 @@ title: "Commandes de base du terminal"
 description: "Aide-mémoire des commandes Linux essentielles avec leur équivalent Windows (PowerShell et CMD)."
 sidebar:
   label: "Commandes de base du terminal"
+  badge: "Mis à jour"
 ---
 
 import { Tabs, TabItem, Aside, Steps, Card, CardGrid } from '@astrojs/starlight/components';
@@ -11,6 +12,12 @@ Ce document rassemble toutes les commandes Linux utilisées dans les activités 
 
 <Aside type="tip" title="PowerShell ou CMD ?">
   Windows offre deux terminaux : **CMD** (l'ancien invite de commandes) et **PowerShell** (le terminal moderne). PowerShell est plus proche de Linux dans sa logique. Les équivalents donnés ici couvrent les deux quand ils diffèrent.
+</Aside>
+
+<Aside type="note" title="Conventions d'écriture">
+Les exemples qui utilisent des **chevrons** (`<nom_utilisateur>`, `<chemin>`) indiquent qu'il faut remplacer 
+la partie entre chevrons par une valeur réelle de ton choix (sans les chevrons). 
+Les autres exemples utilisent directement des valeurs concrètes (`alice`, `fichier.txt`).
 </Aside>
 
 ---
@@ -26,7 +33,7 @@ Affiche le chemin complet du dossier dans lequel tu te trouves.
     ```bash
     pwd
     ```
-    Résultat : `/home/labex/mon-projet`
+    
   </TabItem>
   <TabItem label="Windows (PowerShell)">
     ```powershell
@@ -34,7 +41,7 @@ Affiche le chemin complet du dossier dans lequel tu te trouves.
     # ou son alias :
     pwd
     ```
-    Résultat : `C:\Users\labex\mon-projet`
+    
   </TabItem>
   <TabItem label="Windows (CMD)">
     ```cmd
@@ -53,6 +60,7 @@ Affiche le chemin complet du dossier dans lequel tu te trouves.
     ls -l             # vue détaillée (permissions, taille, date)
     ls -a             # inclut les fichiers cachés (commençant par .)
     ls -la            # détaillé + fichiers cachés
+    ls -ld <dossier>  # détails du dossier lui-même (pas de son contenu)
     ls -R             # récursif (sous-dossiers inclus)
     ls dossier/       # contenu d'un dossier spécifique
     ```
@@ -72,6 +80,10 @@ Affiche le chemin complet du dossier dans lequel tu te trouves.
     ```
   </TabItem>
 </Tabs>
+
+<Aside type="tip" title="ls -ld pour les dossiers">
+  `ls -l <dossier>` liste le **contenu** du dossier. `ls -ld <dossier>` affiche les informations **du dossier lui-même** (ses permissions, son propriétaire). C'est utile pour vérifier les permissions après un `chmod`.
+</Aside>
 
 ---
 
@@ -105,7 +117,7 @@ Affiche le chemin complet du dossier dans lequel tu te trouves.
 | Type | Linux | Windows |
 |------|-------|---------|
 | Relatif | `cd css` ou `cd ../js` | `cd css` ou `cd ..\js` |
-| Absolu | `cd /home/labex/projet` | `cd C:\Users\labex\projet` |
+| Absolu | `cd /home/linus/projet` | `cd C:\Users\linus\projet` |
 | Séparateur | `/` (barre oblique) | `\` (barre oblique inversée) |
 
 <Aside type="note">
@@ -299,6 +311,7 @@ Affiche le chemin complet du dossier dans lequel tu te trouves.
     cp fichier.txt copie.txt         # copier un fichier
     cp fichier.txt dossier/          # copier dans un dossier
     cp -r dossier/ copie-dossier/    # copier un dossier entier
+    cp -p fichier.txt copie.txt      # préserver les permissions et dates
     ```
   </TabItem>
   <TabItem label="Windows (PowerShell)">
@@ -340,6 +353,11 @@ Affiche le chemin complet du dossier dans lequel tu te trouves.
     Sous CMD, renommer et déplacer sont deux commandes distinctes.
   </TabItem>
 </Tabs>
+
+<Aside type="caution" title="cp vs mv et les permissions">
+  `cp` crée un **nouveau fichier** à destination — les permissions et le groupe sont ceux par défaut (ou du dossier parent s'il a `setgid`).  
+  `mv` **conserve** les attributs du fichier d'origine. Dans un espace partagé, après un `mv`, vérifie le groupe avec `ls -l` et corrige avec `chgrp` si nécessaire.
+</Aside>
 
 ---
 
@@ -391,6 +409,398 @@ Affiche le chemin complet du dossier dans lequel tu te trouves.
 
 ---
 
+## Identité et appartenance
+
+<Aside type="note" title="Modèles Linux et Windows : fondamentalement différents">
+  Le modèle de sécurité Linux repose sur **trois niveaux** (propriétaire/groupe/autres) avec **trois permissions** (rwx). 
+  Windows utilise des **listes de contrôle d'accès (ACL)** beaucoup plus fines mais aussi plus complexes. Les commandes Windows données ici sont des points de départ — les concepts ne se transposent pas un pour un.
+</Aside>
+
+### `whoami` — Afficher ton nom d'utilisateur
+
+<Tabs>
+  <TabItem label="Linux">
+    ```bash
+    whoami
+    ```
+    Résultat : `alice`
+  </TabItem>
+  <TabItem label="Windows (PowerShell / CMD)">
+    ```powershell
+    whoami
+    ```
+    Résultat : `MON-PC\alice` (nom de machine + utilisateur)
+  </TabItem>
+</Tabs>
+
+### `id` — UID, GID et groupes
+
+<Tabs>
+  <TabItem label="Linux">
+    ```bash
+    id                          # ton identité complète
+    id <nom_utilisateur>        # identité d'un autre utilisateur
+    id -gn                      # nom de ton groupe principal
+    id -Gn                      # noms de tous tes groupes
+    ```
+    Résultat : `uid=1001(alice) gid=1001(alice) groups=1001(alice),27(sudo),100(webdev)`
+  </TabItem>
+  <TabItem label="Windows (PowerShell)">
+    ```powershell
+    whoami /user                # ton UID (SID Windows)
+    whoami /groups              # tes groupes d'appartenance
+    Get-LocalUser <nom>         # infos sur un utilisateur local
+    ```
+  </TabItem>
+</Tabs>
+
+### `groups` — Lister les groupes d'un utilisateur
+
+<Tabs>
+  <TabItem label="Linux">
+    ```bash
+    groups                      # tes groupes
+    groups <nom_utilisateur>    # groupes d'un autre utilisateur
+    ```
+  </TabItem>
+  <TabItem label="Windows (PowerShell)">
+    ```powershell
+    Get-LocalGroupMember <nom_groupe>        # membres d'un groupe
+    whoami /groups                           # tes groupes
+    ```
+  </TabItem>
+</Tabs>
+
+### `getent` — Interroger la base de données de l'OS
+
+<Tabs>
+  <TabItem label="Linux">
+    ```bash
+    getent group <nom_groupe>        # membres d'un groupe
+    getent passwd <nom_utilisateur>  # infos utilisateur brutes
+    ```
+    Exemple : `getent group webdev` → `webdev:x:1005:alice,bob`
+  </TabItem>
+  <TabItem label="Windows">
+    Pas d'équivalent direct. Utilise `Get-LocalGroupMember` en PowerShell.
+  </TabItem>
+</Tabs>
+
+---
+
+## Créer et gérer utilisateurs et groupes
+
+<Aside type="tip" title="sudo requis">
+  Créer, modifier ou supprimer des utilisateurs et des groupes nécessite les privilèges administrateur. 
+  Sous Linux, préfixe par `sudo`. Sous Windows, ouvre le terminal « en tant qu'administrateur ».
+</Aside>
+
+### `adduser` / `useradd` — Créer un utilisateur
+
+<Tabs>
+  <TabItem label="Linux">
+    ```bash
+    sudo adduser <nom_utilisateur>   # interactif, crée tout (Debian/Ubuntu)
+    sudo useradd <nom_utilisateur>   # bas niveau, pour scripts
+    ```
+    `adduser` demande un mot de passe et crée le répertoire personnel. `useradd` ne fait ni l'un ni l'autre par défaut.
+  </TabItem>
+  <TabItem label="Windows (PowerShell)">
+    ```powershell
+    New-LocalUser -Name <nom> -NoPassword     # créer
+    New-LocalUser -Name <nom> -Password (Read-Host -AsSecureString)
+    ```
+  </TabItem>
+  <TabItem label="Windows (CMD)">
+    ```cmd
+    net user <nom_utilisateur> <mot_de_passe> /add
+    ```
+  </TabItem>
+</Tabs>
+
+### `deluser` — Supprimer un utilisateur
+
+<Tabs>
+  <TabItem label="Linux">
+    ```bash
+    sudo deluser <nom_utilisateur>                  # supprime le compte
+    sudo deluser --remove-home <nom_utilisateur>    # supprime compte + home
+    ```
+  </TabItem>
+  <TabItem label="Windows (PowerShell)">
+    ```powershell
+    Remove-LocalUser -Name <nom_utilisateur>
+    ```
+  </TabItem>
+  <TabItem label="Windows (CMD)">
+    ```cmd
+    net user <nom_utilisateur> /delete
+    ```
+  </TabItem>
+</Tabs>
+
+### `passwd` — Changer un mot de passe
+
+<Tabs>
+  <TabItem label="Linux">
+    ```bash
+    passwd                           # changer ton propre mot de passe
+    sudo passwd <nom_utilisateur>    # changer le mot de passe d'un autre
+    ```
+  </TabItem>
+  <TabItem label="Windows (PowerShell)">
+    ```powershell
+    Set-LocalUser -Name <nom> -Password (Read-Host -AsSecureString)
+    ```
+  </TabItem>
+  <TabItem label="Windows (CMD)">
+    ```cmd
+    net user <nom_utilisateur> <nouveau_mot_de_passe>
+    ```
+  </TabItem>
+</Tabs>
+
+### `addgroup` / `groupadd` — Créer un groupe
+
+<Tabs>
+  <TabItem label="Linux">
+    ```bash
+    sudo addgroup <nom_groupe>       # Debian/Ubuntu
+    sudo groupadd <nom_groupe>       # standard toutes distributions
+    ```
+  </TabItem>
+  <TabItem label="Windows (PowerShell)">
+    ```powershell
+    New-LocalGroup -Name <nom_groupe>
+    ```
+  </TabItem>
+  <TabItem label="Windows (CMD)">
+    ```cmd
+    net localgroup <nom_groupe> /add
+    ```
+  </TabItem>
+</Tabs>
+
+### `usermod -aG` — Ajouter un utilisateur à un groupe
+
+<Tabs>
+  <TabItem label="Linux">
+    ```bash
+    sudo usermod -aG <nom_groupe> <nom_utilisateur>
+    # Exemple : sudo usermod -aG webdev alice
+    ```
+  </TabItem>
+  <TabItem label="Windows (PowerShell)">
+    ```powershell
+    Add-LocalGroupMember -Group <nom_groupe> -Member <nom_utilisateur>
+    ```
+  </TabItem>
+  <TabItem label="Windows (CMD)">
+    ```cmd
+    net localgroup <nom_groupe> <nom_utilisateur> /add
+    ```
+  </TabItem>
+</Tabs>
+
+<Aside type="caution" title="Le drapeau -a est critique">
+  Sans `-a` (*append*), `usermod -G` **remplace** tous les groupes secondaires. Avec `-a`, il **ajoute** le groupe à la liste existante. Oublier `-a` peut retirer un utilisateur du groupe `sudo` et te bloquer hors du système.
+</Aside>
+
+### `newgrp` — Activer un groupe dans la session courante
+
+<Tabs>
+  <TabItem label="Linux">
+    ```bash
+    newgrp <nom_groupe>       # active le groupe comme groupe principal temporaire
+    ```
+    Sans cette commande, l'ajout à un groupe via `usermod -aG` ne prend effet qu'à la prochaine connexion.
+  </TabItem>
+  <TabItem label="Windows">
+    Windows applique automatiquement les changements de groupe à la session suivante. Il faut se déconnecter et se reconnecter.
+  </TabItem>
+</Tabs>
+
+---
+
+## Élévation et changement d'utilisateur
+
+### `sudo` — Exécuter en tant que root
+
+<Tabs>
+  <TabItem label="Linux">
+    ```bash
+    sudo <commande>             # exécute une commande en tant que root
+    sudo -u <user> <commande>   # exécute en tant qu'un autre utilisateur
+    sudo -i                     # ouvre un shell root complet
+    sudo -i -u <user>           # ouvre un shell complet en tant que <user>
+    ```
+    `sudo` demande **ton propre** mot de passe.
+  </TabItem>
+  <TabItem label="Windows">
+    Windows 11 a ajouté une commande `sudo` native (à activer dans les paramètres). Avant, on utilisait :
+
+    ```powershell
+    Start-Process <commande> -Verb RunAs    # lance en admin
+    ```
+
+    Ou clic droit sur le terminal → « Exécuter en tant qu'administrateur ».
+  </TabItem>
+</Tabs>
+
+### `su` — Changer d'utilisateur avec son mot de passe
+
+<Tabs>
+  <TabItem label="Linux">
+    ```bash
+    su - <nom_utilisateur>      # ouvre une session complète en tant que <user>
+    su <nom_utilisateur>        # change d'utilisateur mais garde l'environnement
+    exit                        # revient à l'utilisateur précédent
+    ```
+    `su -` demande le mot de passe **de l'utilisateur cible**.
+  </TabItem>
+  <TabItem label="Windows (PowerShell)">
+    ```powershell
+    runas /user:<nom_utilisateur> cmd      # lance un shell en tant que <user>
+    ```
+  </TabItem>
+</Tabs>
+
+<Aside type="tip" title="su vs sudo -u vs sudo -i -u">
+Trois façons de « devenir » un autre utilisateur sous Linux :
+
+- **`su - <user>`** — session complète, mais il faut **le mot de passe de `<user>`**.
+- **`sudo -u <user> <cmd>`** — une commande ponctuelle avec **ton** mot de passe sudo, environnement inchangé.
+- **`sudo -i -u <user>`** — session complète avec **ton** mot de passe sudo (pratique et courant).
+</Aside>
+
+---
+
+## Permissions
+
+<Aside type="note" title="Un modèle simple, mais strict">
+  Le modèle Linux est simple : pour chaque fichier, **propriétaire**, **groupe** et **autres** ont chacun des droits `r` (lecture), `w` (écriture), `x` (exécution). 
+  La notation octale combine les trois : `rwx` = 7, `r-x` = 5, `r--` = 4.
+
+  Windows utilise les ACL NTFS, beaucoup plus fines (voir docs Microsoft).
+</Aside>
+
+### `chmod` — Modifier les permissions
+
+<Tabs>
+  <TabItem label="Linux — notation octale">
+    ```bash
+    chmod <octal> <chemin>
+    # Exemples :
+    chmod 755 script.sh          # rwxr-xr-x — script exécutable
+    chmod 644 index.html         # rw-r--r-- — fichier web
+    chmod 600 id_rsa             # rw------- — clé SSH privée
+    chmod 700 dossier-prive/     # rwx------ — dossier privé
+    chmod 2775 dossier-partage/  # rwxrwxr-x + setgid — dossier collaboratif
+    ```
+  </TabItem>
+  <TabItem label="Linux — notation symbolique">
+    ```bash
+    chmod u+x script.sh       # ajouter x au propriétaire
+    chmod g+rw fichier.txt    # ajouter r+w au groupe
+    chmod o-rwx secret.key    # retirer tout aux autres
+    chmod a+r public.html     # ajouter r à tous (u+g+o)
+    chmod g+s dossier/        # activer setgid (héritage du groupe)
+    ```
+  </TabItem>
+  <TabItem label="Linux — récursif">
+    ```bash
+    chmod -R 755 <dossier>    # applique à tout le contenu
+    ```
+    Attention : `chmod -R 755` donne `x` aux fichiers (rarement voulu pour du contenu web).
+  </TabItem>
+</Tabs>
+
+### `chown` — Changer le propriétaire
+
+<Tabs>
+  <TabItem label="Linux">
+    ```bash
+    sudo chown <user> <chemin>                  # propriétaire seulement
+    sudo chown <user>:<group> <chemin>          # propriétaire + groupe
+    sudo chown :<group> <chemin>                # groupe seulement
+    sudo chown -R <user>:<group> <dossier>      # récursif
+    ```
+    Exemple : `sudo chown -R alice:webdev /var/www/monsite`
+  </TabItem>
+</Tabs>
+
+### `chgrp` — Changer le groupe
+
+<Tabs>
+  <TabItem label="Linux">
+    ```bash
+    sudo chgrp <group> <chemin>              # un fichier
+    sudo chgrp -R <group> <dossier>          # récursif
+    ```
+    C'est un raccourci pour `chown :<group>`.
+  </TabItem>
+</Tabs>
+
+### `umask` — Voir ou modifier le masque par défaut
+
+<Tabs>
+  <TabItem label="Linux">
+    ```bash
+    umask              # affiche le masque courant (ex: 0002)
+    umask 0022         # définir un nouveau masque pour la session
+    ```
+    Le masque détermine les permissions des nouveaux fichiers : `666 − umask` pour les fichiers, `777 − umask` pour les répertoires. Sur Ubuntu, `umask 0002` → nouveaux fichiers en `664`.
+  </TabItem>
+</Tabs>
+
+<Aside type="tip" title="Valeurs courantes de permissions">
+  **755** répertoires et scripts · **644** fichiers web · **600** clés SSH privées · **700** dossiers privés · **2775** dossier collaboratif avec setgid.
+</Aside>
+
+---
+
+## Installer des logiciels
+
+### `apt` — Gestionnaire de paquets (Debian/Ubuntu)
+
+<Tabs>
+  <TabItem label="Linux (apt)">
+    ```bash
+    sudo apt update                    # rafraîchir la liste des paquets
+    sudo apt install <paquet>          # installer
+    sudo apt remove <paquet>           # désinstaller
+    sudo apt upgrade                   # mettre à jour tous les paquets
+    apt search <mot_cle>               # chercher un paquet
+    apt list --upgradable              # lister les paquets à mettre à jour
+    ```
+    Exemple : `sudo apt install nginx`
+  </TabItem>
+  <TabItem label="Windows (winget)">
+    ```powershell
+    winget install <paquet>            # installer
+    winget uninstall <paquet>          # désinstaller
+    winget upgrade --all               # mettre à jour tout
+    winget search <mot_cle>            # chercher
+    winget list                        # lister les paquets installés
+    ```
+    Exemple : `winget install Node.js`
+  </TabItem>
+  <TabItem label="macOS (Homebrew)">
+    ```bash
+    brew install <paquet>
+    brew uninstall <paquet>
+    brew upgrade
+    brew search <mot_cle>
+    ```
+  </TabItem>
+</Tabs>
+
+<Aside type="tip" title="Deux couches de paquets">
+  `apt` installe des logiciels **au niveau du système** (accessible à tous les utilisateurs).
+</Aside>
+
+---
+
 ## Utilitaires
 
 ### `history` — Historique des commandes
@@ -434,10 +844,13 @@ Affiche le chemin complet du dossier dans lequel tu te trouves.
 
 ## Aide-mémoire rapide
 
+### Fichiers et dossiers
+
 | Action | Linux | PowerShell | CMD |
 |--------|-------|------------|-----|
 | Où suis-je ? | `pwd` | `pwd` | `cd` |
 | Lister | `ls` | `ls` | `dir` |
+| Détails d'un dossier | `ls -ld <d>` | — | — |
 | Entrer dans un dossier | `cd dossier` | `cd dossier` | `cd dossier` |
 | Remonter | `cd ..` | `cd ..` | `cd ..` |
 | Créer un dossier | `mkdir nom` | `mkdir nom` | `mkdir nom` |
@@ -454,3 +867,34 @@ Affiche le chemin complet du dossier dans lequel tu te trouves.
 | Supprimer dossier | `rm -r d` | `rm -Recurse d` | `rmdir /s d` |
 | Historique | `history` | `Get-History` | `doskey /history` |
 | Effacer terminal | `clear` | `cls` | `cls` |
+
+### Utilisateurs, groupes et permissions
+
+| Action | Linux | PowerShell |
+|--------|-------|------------|
+| Qui suis-je ? | `whoami` | `whoami` |
+| Mon identité complète | `id` | `whoami /groups` |
+| Groupes d'un utilisateur | `groups <user>` | `Get-LocalGroupMember <g>` |
+| Membres d'un groupe | `getent group <g>` | `Get-LocalGroupMember <g>` |
+| Créer un utilisateur | `sudo adduser <user>` | `New-LocalUser` |
+| Supprimer un utilisateur | `sudo deluser <user>` | `Remove-LocalUser` |
+| Changer mot de passe | `passwd` | `Set-LocalUser -Password` |
+| Créer un groupe | `sudo addgroup <g>` | `New-LocalGroup` |
+| Ajouter au groupe | `sudo usermod -aG <g> <user>` | `Add-LocalGroupMember` |
+| Activer un groupe | `newgrp <g>` | (reconnexion) |
+| Exécuter en root | `sudo <cmd>` | `Start-Process -Verb RunAs` |
+| Devenir un autre user | `sudo -i -u <user>` | `runas /user:<user>` |
+| Changer permissions | `chmod 755 <f>` | `icacls <f> /grant ...` |
+| Changer propriétaire | `sudo chown <u>:<g> <f>` | `icacls <f> /setowner <u>` |
+| Changer groupe | `sudo chgrp <g> <f>` | (via ACL) |
+| Voir/modifier umask | `umask` | — |
+
+### Installation de logiciels
+
+| Action | Linux (apt) | Windows (winget) | macOS (brew) |
+|--------|-------------|------------------|--------------|
+| Rafraîchir | `sudo apt update` | — (auto) | `brew update` |
+| Installer | `sudo apt install <p>` | `winget install <p>` | `brew install <p>` |
+| Désinstaller | `sudo apt remove <p>` | `winget uninstall <p>` | `brew uninstall <p>` |
+| Mettre à jour tout | `sudo apt upgrade` | `winget upgrade --all` | `brew upgrade` |
+| Chercher | `apt search <m>` | `winget search <m>` | `brew search <m>` |
