@@ -1,0 +1,140 @@
+---
+title: "Prise en main de nano"
+description: Aide-mémoire pour éditer des fichiers dans le terminal avec nano.
+sidebar:
+  label: "Nano — aide-mémoire"
+---
+
+import { Aside, Steps, Tabs, TabItem, Card, CardGrid } from '@astrojs/starlight/components';
+
+`nano` est un éditeur de texte qui fonctionne directement dans le terminal. Simple, rapide, disponible par défaut sur presque toutes les distributions Linux — c'est l'outil que tu utiliseras quand tu as besoin de modifier un fichier sur un serveur distant, sans interface graphique.
+
+## Ouvrir un fichier
+
+```bash
+nano <chemin_fichier>
+# Exemples :
+nano script.sh              # ouvre (ou crée) script.sh
+nano /etc/hosts             # édite un fichier système (avec sudo si nécessaire)
+sudo nano /etc/ssh/sshd_config
+```
+
+Si le fichier n'existe pas, nano le créera lors de la sauvegarde. Si tu lances `nano` sans argument, il ouvre un document vide.
+
+## L'interface
+
+Quand nano s'ouvre, tu vois trois zones :
+
+- **Haut** — barre de titre avec le nom du fichier.
+- **Centre** — ta zone d'édition. Tu peux taper directement, déplacer le curseur avec les flèches, supprimer avec Retour arrière.
+- **Bas** — rappel des raccourcis les plus courants.
+
+<Aside type="note" title="La notation ^ et M-">
+Dans la barre d'aide en bas, `^X` signifie **Ctrl+X**, et `M-X` signifie **Alt+X** (parfois appelé Meta). Sur macOS, `M-` correspond à **Option** ou **Esc** selon la configuration du terminal.
+</Aside>
+
+## Workflow typique
+
+1. Ouvrir un fichier : `nano fichier.txt`
+2. Modifier le contenu
+3. Sauvegarder : `Ctrl+O` → `Entrée`
+4. Quitter : `Ctrl+X`
+
+## Les raccourcis essentiels
+
+| Action | Raccourci |
+|--------|-----------|
+| Sauvegarder | `Ctrl+O` puis `Entrée` |
+| Quitter | `Ctrl+X` |
+| Annuler la dernière action | `Ctrl+U` (rétablir avec `Ctrl+E`) |
+| Rechercher | `Ctrl+W` puis taper, puis `Entrée` |
+| Rechercher la prochaine occurrence | `Alt+W` |
+| Aller au début du fichier | `Ctrl+Y` |
+| Aller à la fin du fichier | `Ctrl+V` |
+| Aller à une ligne précise | `Ctrl+_` puis numéro de ligne |
+| Afficher le numéro de ligne | `Ctrl+C` (position actuelle) |
+| Aide complète | `Ctrl+G` |
+
+<Aside type="note" title="Pas de vrai Ctrl+Z">
+Nano ne possède pas un système d'annulation (undo) aussi complet que d'autres éditeurs. 
+Certaines versions récentes ajoutent `Alt+U` (undo) et `Alt+E` (redo), mais ce n'est pas toujours disponible.
+</Aside>
+
+<Aside type="tip" title="Ctrl+O, puis Entrée">
+Sauvegarder avec `Ctrl+O` te demande de confirmer le nom du fichier. 
+Appuie simplement sur `Entrée` pour garder le nom actuel. 
+Si tu modifies le nom à cette étape, tu crées une copie.
+
+Sauvegarder et quitter rapidement:
+```bash
+Ctrl+O → Enter → Ctrl+X
+```
+
+</Aside>
+
+## Couper, copier, coller
+
+Nano n'utilise pas le presse-papier du système. Il a son propre « cutbuffer ».
+
+| Action | Raccourci |
+|--------|-----------|
+| Couper la ligne entière | `Ctrl+K` |
+| Coller | `Ctrl+U` |
+| Sélectionner (début de sélection) | `Ctrl+^` (ou `Alt+A`) |
+| Couper la sélection | `Ctrl+K` |
+| Copier (sans couper) | `Alt+6` |
+
+<Aside type="note" title="Pour coller depuis l'extérieur">
+Pour coller du texte depuis ton presse-papier système (copié depuis un navigateur par exemple), utilise **les raccourcis du terminal** : `Ctrl+Shift+V` sur la plupart des terminaux Linux, `Cmd+V` sur macOS. Ça contourne nano et insère le texte directement.
+</Aside>
+
+## Quitter sans sauvegarder
+
+`Ctrl+X` → si le fichier a été modifié, nano demande « Save modified buffer? ».
+
+- `Y` → sauvegarder avant de quitter
+- `N` → quitter sans sauvegarder (modifications perdues)
+- `Ctrl+C` → annuler et rester dans nano
+
+## Activer les numéros de ligne
+
+Très pratique pour déboguer des scripts. Deux options :
+
+**Pour la session courante** :
+
+```bash
+nano -l <chemin_fichier>   # lance avec -l pour "line numbers"
+```
+
+**De façon permanente**, ajoute cette ligne à `~/.nanorc` (crée le fichier s'il n'existe pas) :
+
+```
+set linenumbers
+```
+
+Autres options utiles dans `~/.nanorc` :
+
+```
+set tabsize 4              # largeur de tabulation
+set tabstospaces           # convertir les tabulations en espaces
+set autoindent             # indentation automatique
+set mouse                  # support de la souris pour déplacer le curseur
+```
+
+## Nano, vim ou VS Code?
+
+<CardGrid>
+  <Card title="nano">
+    Simple, immédiat, aucune courbe d'apprentissage. Parfait pour éditer rapidement un fichier de configuration ou un petit script sur un serveur distant. Installé par défaut sur presque toutes les distributions.
+  </Card>
+  <Card title="vim / vi">
+    Puissant, ultra-rapide une fois maîtrisé, mais sa courbe d'apprentissage est raide (les modes « normal » et « insertion », les commandes cryptiques). Toujours installé par défaut — utile à connaître parce qu'on finit par tomber dessus dans certaines situations (`git commit` sans `$EDITOR` configuré, par exemple). Pour quitter : `Esc` puis `:q!` puis `Entrée`.
+  </Card>
+  <Card title="VS Code">
+    Éditeur complet avec interface graphique. Idéal pour le développement local. Son extension **Remote - SSH** permet d'éditer des fichiers sur un serveur distant comme s'ils étaient locaux — souvent plus confortable que nano pour des modifications importantes.
+  </Card>
+</CardGrid>
+
+<Aside type="tip" title="En pratique">
+Sur ta machine de développement, utilise VS Code. Sur un serveur distant où tu dois vite modifier un fichier de configuration, nano. Apprendre les bases de vim reste utile parce que tu finiras par tomber dans un éditeur vim sans l'avoir choisi — au minimum, savoir comment en sortir.
+</Aside>

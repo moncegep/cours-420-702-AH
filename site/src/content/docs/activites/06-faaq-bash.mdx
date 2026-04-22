@@ -1,0 +1,548 @@
+---
+title: "Activité : automatiser la FAAQ avec un script bash"
+description: Introduction au scripting bash en reconstruisant l'installation FAAQ en une seule commande automatisée.
+sidebar:
+  order: 8
+---
+
+import { Aside, Steps, Tabs, TabItem, Card, CardGrid } from '@astrojs/starlight/components';
+
+## Pourquoi automatiser?
+
+Dans l'activité précédente, tu as configuré la plateforme FAAQ à la main — utilisateurs, groupes, dossiers, permissions. Une vingtaine de commandes à taper sans te tromper.
+
+Imagine maintenant :
+
+- Tu dois refaire la même installation sur un autre serveur (production).
+- Tu veux recommencer depuis zéro parce que tu as fait une erreur.
+- Un nouveau club s'ajoute à la fédération et il faut répéter une partie du travail.
+
+Taper 20 commandes à la main chaque fois, c'est lent, source d'erreurs, et franchement pas professionnel. La solution est d'écrire un **script** : un fichier qui contient toutes les commandes, exécutable en une seule ligne.
+
+Dans cette activité, tu vas écrire un script bash qui reproduit l'installation complète de la plateforme FAAQ. L'objectif final :
+
+```bash
+sudo ./installer-faaq.sh
+```
+
+Une seule commande, et toute la configuration est en place.
+
+<Aside type="tip" title="Pertinence professionnelle">
+Les scripts bash sont partout dans le développement web : déploiement d'applications, initialisation de serveurs, automatisation de tâches répétitives. Les outils modernes comme Docker, Ansible ou GitHub Actions s'appuient tous, à un moment ou un autre, sur des scripts shell. Savoir en écrire est une compétence de base en opérations.
+</Aside>
+
+---
+
+## Partie 1 — Premiers pas avec bash
+
+### Qu'est-ce qu'un script bash?
+
+Un script bash est un **fichier texte** qui contient des commandes shell. Quand tu l'exécutes, bash lit le fichier ligne par ligne et exécute chaque commande, comme si tu les tapais toi-même dans le terminal.
+
+<Aside type="note" title="Le parallèle avec JavaScript">
+Si tu écris du JavaScript en parallèle, la logique est similaire : tu écris des instructions dans un fichier `.js`, et Node.js les exécute. En bash, le fichier se termine par `.sh` et c'est bash (le shell) qui l'interprète. Les grandes différences :
+
+- **Pas de point-virgule** en fin de ligne (un saut de ligne suffit).
+- **Pas d'accolades** pour délimiter les blocs — des mots-clés comme `do`/`done`, `then`/`fi`.
+- Les **variables** s'utilisent avec `$` devant (comme dans les *template literals* JS : `${variable}`).
+</Aside>
+
+### Le shebang
+
+La toute première ligne d'un script bash est toujours la même :
+
+```bash
+#!/bin/bash
+```
+
+Cette ligne — appelée **shebang** — indique au système quel programme doit exécuter le fichier. `#!/bin/bash` dit : « interprète ce script avec bash ». Sans cette ligne, le système ne sait pas comment exécuter le fichier.
+
+<Aside type="caution" title="À mettre absolument en première ligne">
+Le shebang doit être la **toute première ligne** du fichier — pas de commentaire ni de ligne vide avant. Même un espace en début de ligne casse le mécanisme.
+</Aside>
+
+### Commentaires
+
+Toute ligne qui commence par `#` (sauf le shebang) est un **commentaire** — bash l'ignore. Les commentaires sont là pour expliquer le code à ceux qui le lisent (toi dans trois semaines, par exemple).
+
+```bash
+#!/bin/bash
+
+# Ceci est un commentaire.
+# Bash ne l'exécute pas.
+
+echo "Bonjour"   # Les commentaires peuvent aussi finir une ligne
+```
+
+### Variables
+
+Comme en JavaScript, les variables stockent des valeurs que tu peux réutiliser. En bash :
+
+```bash
+# Définition : PAS d'espace autour du =
+nom="Alice"
+age=30
+
+# Utilisation : on préfixe avec $
+echo "Bonjour $nom, tu as $age ans"
+```
+
+<Aside type="caution" title="Deux pièges classiques pour débutants">
+**Piège 1 : les espaces.** En bash, `nom = "Alice"` (avec espaces) **ne fonctionne pas** — bash tenterait d'exécuter une commande `nom`. Écris toujours `nom="Alice"` sans espace autour du `=`.
+
+**Piège 2 : les guillemets.** Entoure toujours tes variables de guillemets doubles quand tu les utilises dans une commande : `echo "$nom"` plutôt que `echo $nom`. Sans guillemets, une variable contenant un espace serait interprétée comme plusieurs arguments distincts. Les guillemets protègent contre ce comportement.
+</Aside>
+
+### Exécuter un script
+
+<Steps>
+1. **Créer le fichier** — avec l'extension `.sh` par convention.
+   ```bash
+   touch hello.sh
+   nano hello.sh
+   ```
+
+2. **Écrire le contenu** — avec le shebang en première ligne.
+   ```bash
+   #!/bin/bash
+   echo "Bonjour, bash!"
+   ```
+
+3. **Rendre le fichier exécutable** — permission `x`.
+   ```bash
+   chmod +x hello.sh
+   ```
+
+4. **L'exécuter** — avec `./` devant le nom.
+   ```bash
+   ./hello.sh
+   # Bonjour, bash!
+   ```
+</Steps>
+
+<Aside type="tip" title="Pourquoi ./devant le nom?">
+Par défaut, bash cherche les commandes dans les dossiers listés dans la variable `$PATH` (comme `/usr/bin`, `/usr/local/bin`). Ton dossier courant n'en fait pas partie — pour des raisons de sécurité. Le `./` dit explicitement « exécute le fichier qui se trouve **ici**, dans le dossier courant ».
+</Aside>
+
+### Exercice 1 — Ton premier script
+
+Crée un script `identite.sh` qui :
+
+1. Commence par un shebang.
+2. A un commentaire expliquant ce qu'il fait.
+3. Définit une variable avec ton nom.
+4. Affiche un message personnalisé qui utilise la variable.
+
+<details>
+<summary>Exemple de solution</summary>
+
+```bash
+#!/bin/bash
+
+# Script qui présente l'utilisateur.
+
+nom="Henri"
+echo "Bonjour, je m'appelle $nom."
+echo "Je suis en train d'apprendre bash."
+```
+
+```bash
+chmod +x identite.sh
+./identite.sh
+# Bonjour, je m'appelle Henri.
+# Je suis en train d'apprendre bash.
+```
+
+</details>
+
+### Exercice 2 — Construire une phrase
+
+Crée un script `presentation.sh` qui :
+
+1. Définit trois variables : ton prénom, ton âge et ta ville.
+2. Affiche une phrase complète en utilisant ces trois variables.
+
+Exemple de sortie attendue :
+
+```
+Je m'appelle Alice, j'ai 20 ans et j'habite à Montréal.
+```
+
+<details>
+<summary>Exemple de solution</summary>
+
+```bash
+#!/bin/bash
+
+# Petite présentation.
+
+prenom="Alice"
+age=20
+ville="Montréal"
+
+echo "Je m'appelle $prenom, j'ai $age ans et j'habite à $ville."
+```
+
+</details>
+
+### Exercice 3 — Variables en contexte réaliste
+
+Dans les scripts professionnels, les variables servent à regrouper les informations qu'on pourrait vouloir modifier plus tard à un seul endroit. C'est ce pattern que tu vas utiliser dans le script FAAQ.
+
+Crée un script `info-fichier.sh` qui :
+
+1. Définit trois variables : `nom_fichier`, `dossier`, `taille`.
+2. Affiche une phrase décrivant le fichier.
+
+Exemple de sortie attendue :
+
+```
+Le fichier rapport.pdf est dans /home/alice/documents et fait 450 Ko.
+```
+
+<Aside type="tip" title="Pourquoi cet exercice compte">
+Remarque que `nom_fichier`, `dossier` et `taille` ne sont pas des données personnelles — ce sont des **paramètres de configuration** que quelqu'un pourrait vouloir changer. C'est exactement le même usage que `ADMIN`, `RACINE` ou `UTILISATEURS_MTL` que tu verras dans la partie suivante. Les variables ne servent pas qu'à stocker ton nom — elles structurent un script pour qu'il soit modifiable facilement.
+</Aside>
+
+<details>
+<summary>Exemple de solution</summary>
+
+```bash
+#!/bin/bash
+
+# Affiche des informations sur un fichier.
+
+nom_fichier="rapport.pdf"
+dossier="/home/alice/documents"
+taille="450 Ko"
+
+echo "Le fichier $nom_fichier est dans $dossier et fait $taille."
+```
+
+</details>
+
+---
+
+## Partie 2 — Les boucles `for`
+
+### Le problème à résoudre
+
+Dans l'exercice FAAQ, tu as tapé plusieurs fois la même commande, en changeant seulement le nom de l'utilisateur :
+
+```bash
+sudo adduser alice
+sudo adduser bob
+sudo adduser carol
+```
+
+Trois noms, trois commandes presque identiques. Imagine avec 50 membres à créer. Les **boucles** sont faites pour ça.
+
+### Syntaxe `for`
+
+```bash
+for variable in element1 element2 element3; do
+    # commandes à répéter
+    # $variable prend tour à tour chaque valeur
+done
+```
+
+Exemple concret :
+
+```bash
+for fruit in pomme poire prune; do
+    echo "J'aime la $fruit"
+done
+```
+
+Résultat :
+
+```
+J'aime la pomme
+J'aime la poire
+J'aime la prune
+```
+
+<Aside type="note" title="Le parallèle avec JavaScript">
+C'est l'équivalent de `for (const fruit of ["pomme", "poire", "prune"])` en JS. Le `do ... done` joue le rôle des `{ ... }`. Un point important : en bash, les éléments sont séparés par des **espaces**, pas des virgules.
+</Aside>
+
+### Boucler sur une variable contenant plusieurs valeurs
+
+Tu peux stocker une liste dans une variable, puis boucler dessus :
+
+```bash
+utilisateurs="alice bob carol"
+
+for nom in $utilisateurs; do
+    echo "Utilisateur : $nom"
+done
+```
+
+<Aside type="tip" title="Remarque sur les guillemets ici">
+Dans le `for`, on écrit `$utilisateurs` **sans** guillemets, parce qu'on veut justement que bash sépare la chaîne en mots distincts. C'est une exception à la règle générale — dans les autres contextes, garde les guillemets autour de tes variables.
+</Aside>
+
+### Exercice 4 — Boucle avec création d'utilisateurs
+
+Écris un script `creer-utilisateurs.sh` qui utilise une boucle `for` pour créer plusieurs utilisateurs d'un coup.
+
+1. Définis une variable contenant une liste de noms de test (par exemple `testuser_a testuser_b`).
+2. Boucle sur cette liste avec `for`, et appelle `adduser` sur chaque nom.
+3. Ajoute un `echo` de confirmation après chaque création.
+
+<Aside type="caution" title="Points pratiques">
+Ce script crée **vraiment** des utilisateurs sur ta VM — lance-le avec `sudo` et utilise des noms de test que tu pourras supprimer ensuite (évite `alice`, `bob`, etc. que tu réutiliseras plus tard dans le script FAAQ).
+
+Pour que `adduser` fonctionne dans un script sans te poser de questions, utilise les options `--disabled-password --gecos ""`. Tu les reverras dans la Partie 3 — elles rendent la création **non interactive**.
+</Aside>
+
+<details>
+<summary>Solution</summary>
+
+```bash
+#!/bin/bash
+
+# Création de plusieurs utilisateurs de test via une boucle.
+
+utilisateurs="testuser_a testuser_b"
+
+for nom in $utilisateurs; do
+    adduser --disabled-password --gecos "" "$nom"
+    echo "→ $nom créé"
+done
+```
+
+```bash
+chmod +x creer-utilisateurs.sh
+sudo ./creer-utilisateurs.sh
+```
+
+Vérifie avec `getent passwd testuser_a testuser_b` que les deux comptes existent.
+
+**Nettoyage après test** — supprime les comptes pour libérer les noms :
+
+```bash
+sudo deluser --remove-home testuser_a
+sudo deluser --remove-home testuser_b
+```
+
+</details>
+
+---
+
+## Partie 3 — Construction progressive du script FAAQ
+
+Maintenant que tu maîtrises les briques de base, on va construire le script d'installation FAAQ étape par étape. **Tu vas ajouter une section à la fois**, puis tester avant de passer à la suivante.
+
+### Préparation
+
+<Steps>
+1. Crée le fichier :
+   ```bash
+   touch installer-faaq.sh
+   chmod +x installer-faaq.sh
+   ```
+
+2. Ouvre-le avec `nano` ou un autre éditeur.
+
+3. Commence par le shebang et un commentaire d'en-tête :
+   ```bash
+   #!/bin/bash
+
+   # Script d'installation de la plateforme FAAQ.
+   # Crée les utilisateurs, groupes, dossiers et permissions.
+   ```
+</Steps>
+
+<Aside type="caution" title="Ce script doit être exécuté avec sudo">
+Le script va créer des utilisateurs et modifier des fichiers système. Tu devras l'exécuter avec `sudo ./installer-faaq.sh`. Évite d'ajouter `sudo` à l'intérieur du script — il est plus propre de l'appeler une seule fois au lancement.
+
+Avant chaque test, **nettoie** avec le script de nettoyage de l'activité précédente pour repartir d'un état propre.
+</Aside>
+
+### Étape 1 — Les variables de configuration
+
+Commencer par définir toutes les valeurs qui pourraient changer (noms d'utilisateurs, chemins). Les regrouper au début du script est une bonne pratique : si tu dois les modifier plus tard, tu n'as qu'un seul endroit à changer.
+
+Ajoute ces lignes après l'en-tête :
+
+```bash
+# === Configuration ===
+UTILISATEURS_MTL="alice bob"
+UTILISATEURS_QC="carol"
+ADMIN="fed_admin"
+RACINE="/faaq"
+```
+
+<Aside type="note" title="Convention : MAJUSCULES">
+Par convention, les variables de configuration (qui agissent comme des constantes) sont écrites en **MAJUSCULES**. Ce n'est pas obligatoire, mais ça aide à les repérer dans un long script.
+</Aside>
+
+**Test de l'étape 1** — pour vérifier que les variables sont bien définies, ajoute temporairement à la fin du script :
+
+```bash
+echo "Admin: $ADMIN"
+echo "Montréal: $UTILISATEURS_MTL"
+echo "Québec: $UTILISATEURS_QC"
+echo "Racine: $RACINE"
+```
+
+Lance le script : `sudo ./installer-faaq.sh`. Tu devrais voir les quatre valeurs s'afficher. Supprime ensuite ces lignes de test avant de passer à l'étape 2.
+
+### Étape 2 — Créer les utilisateurs
+
+Plutôt que trois `adduser` individuels, on boucle sur les trois catégories d'utilisateurs (admin, Montréal, Québec).
+
+```bash
+# === 1. Créer les utilisateurs ===
+echo "Création des utilisateurs..."
+
+for utilisateur in $ADMIN $UTILISATEURS_MTL $UTILISATEURS_QC; do
+    adduser --disabled-password --gecos "" "$utilisateur"
+done
+```
+
+Deux choses à noter :
+
+- **`$ADMIN $UTILISATEURS_MTL $UTILISATEURS_QC`** — bash concatène les valeurs en une seule liste de noms. Pour `alice bob` + `carol` + `fed_admin`, on obtient `fed_admin alice bob carol`.
+- **`--disabled-password --gecos ""`** — ces options rendent `adduser` **non interactif**. Sans mot de passe ni questions à l'étudiant : parfait pour un script. Les comptes sont créés « sans mot de passe configuré » (tu pourrais en définir un plus tard avec `passwd`).
+
+**Test de l'étape 2** — lance le script, puis vérifie :
+
+```bash
+getent passwd fed_admin alice bob carol
+```
+
+Tu devrais voir quatre lignes, une par utilisateur.
+
+### Étape 3 — Créer les groupes
+
+Même principe : une boucle sur les quatre groupes.
+
+```bash
+# === 2. Créer les groupes ===
+echo "Création des groupes..."
+
+for groupe in faaq_admin faaq_membres club_mtl club_qc; do
+    addgroup "$groupe"
+done
+```
+
+**Test** — relance le script (après nettoyage) et vérifie :
+
+```bash
+getent group faaq_admin faaq_membres club_mtl club_qc
+```
+
+### Étape 4 — Affecter les utilisateurs aux groupes
+
+C'est ici que les boucles brillent vraiment. Les membres d'un club partagent tous la même affectation — une boucle pour Montréal, une pour Québec.
+
+```bash
+# === 3. Affecter aux groupes ===
+echo "Affectation aux groupes..."
+
+usermod -aG faaq_admin,faaq_membres "$ADMIN"
+
+for utilisateur in $UTILISATEURS_MTL; do
+    usermod -aG club_mtl,faaq_membres "$utilisateur"
+done
+
+for utilisateur in $UTILISATEURS_QC; do
+    usermod -aG club_qc,faaq_membres "$utilisateur"
+done
+```
+
+<Aside type="tip" title="Pourquoi deux boucles séparées?">
+Les membres de Montréal et de Québec ne vont pas dans les mêmes groupes. Deux boucles séparées rendent cette distinction évidente dans le code. Si tu ajoutes un nouveau club (Sherbrooke), il suffira d'ajouter une nouvelle variable `UTILISATEURS_SHB` et une nouvelle boucle.
+</Aside>
+
+**Test** — vérifie qu'alice est bien dans `club_mtl` et `faaq_membres` :
+
+```bash
+groups alice
+# alice : alice users club_mtl faaq_membres
+```
+
+### Étape 5 — Créer la structure de dossiers
+
+Un seul `mkdir -p` avec l'expansion d'accolades (vu dans l'activité précédente) crée l'arborescence principale. Ensuite une boucle pour les dossiers personnels des membres.
+
+```bash
+# === 4. Créer la structure ===
+echo "Création de la structure..."
+
+mkdir -p "$RACINE"/{admin,public,clubs/{montreal,quebec},membres}
+
+for utilisateur in $UTILISATEURS_MTL $UTILISATEURS_QC; do
+    mkdir -p "$RACINE/membres/$utilisateur"
+done
+```
+
+**Test** — affiche l'arborescence :
+
+```bash
+ls -R /faaq
+```
+
+Tu devrais voir `/faaq/admin`, `/faaq/public`, `/faaq/clubs/montreal`, `/faaq/clubs/quebec`, `/faaq/membres/alice`, `/faaq/membres/bob`, `/faaq/membres/carol`.
+
+### Étape 6 — Définir les propriétaires
+
+Les dossiers « fixes » reçoivent leur propriétaire et groupe un par un. Les dossiers des membres, eux, se prêtent à une boucle.
+
+```bash
+# === 5. Définir les propriétaires ===
+echo "Définition des propriétaires..."
+
+chown root:faaq_membres "$RACINE"
+chown "$ADMIN":faaq_admin "$RACINE/admin"
+chown "$ADMIN":faaq_membres "$RACINE/public"
+chown root:faaq_membres "$RACINE/clubs"
+chown "$ADMIN":club_mtl "$RACINE/clubs/montreal"
+chown "$ADMIN":club_qc "$RACINE/clubs/quebec"
+chown root:faaq_membres "$RACINE/membres"
+
+for utilisateur in $UTILISATEURS_MTL $UTILISATEURS_QC; do
+    chown "$utilisateur":"$utilisateur" "$RACINE/membres/$utilisateur"
+done
+```
+
+**Test** — vérifie avec `ls -ld` :
+
+```bash
+ls -ld /faaq /faaq/*/ /faaq/clubs/*/ /faaq/membres/*/
+```
+
+### Étape 7 — Appliquer les permissions
+
+Finalement, les permissions. Les dossiers de clubs reçoivent le bit `setgid` (le `2` devant `770`) pour que les fichiers créés par les membres appartiennent au groupe du club.
+
+```bash
+# === 6. Appliquer les permissions ===
+echo "Application des permissions..."
+
+chmod 750 "$RACINE"
+chmod 770 "$RACINE/admin"
+chmod 755 "$RACINE/public"
+chmod 755 "$RACINE/clubs"
+chmod 2770 "$RACINE/clubs/montreal"
+chmod 2770 "$RACINE/clubs/quebec"
+chmod 755 "$RACINE/membres"
+
+for utilisateur in $UTILISATEURS_MTL $UTILISATEURS_QC; do
+    chmod 700 "$RACINE/membres/$utilisateur"
+done
+
+echo ""
+echo "✓ Installation FAAQ terminée."
+```
+
+**Test final** — après un nettoyage complet et une exécution du script, vérifie toute l'arborescence :
+
+```bash
+ls -ld /faaq /faaq/*/ /faaq/clubs/*/ /faaq/membres/*/
+```
+
+Tu devrais voir exactement la même configuration que dans l'exercice manuel précédent.
+

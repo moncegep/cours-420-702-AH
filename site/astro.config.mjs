@@ -38,7 +38,8 @@ export default defineConfig({
 						{ label: 'Fichiers et logs', slug: 'activites/02-fichiers-et-logs' },
 						{ label: 'Modélisation ascenseur', slug: 'activites/03-modelisation-ascenseur' },
 						{ label: 'Installation Linux', slug: 'activites/04-installation-linux' },
-						{ label: 'Permissions à la FAAQ', slug: 'activites/05-faaq' }
+						{ label: 'Permissions à la FAAQ', slug: 'activites/05-faaq' },
+						{ label: 'Automatiser la FAAQ avec un script bash', slug: 'activites/06-faaq-bash' }
 					],
 				},
 				{
