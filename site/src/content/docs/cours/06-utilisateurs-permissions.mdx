@@ -6,6 +6,13 @@ sidebar:
 ---
 
 import { Aside, Steps, Tabs, TabItem, Card, CardGrid } from '@astrojs/starlight/components';
+import ViewSwitcher from '../../../components/ViewSwitcher.astro';
+import SlidePresentation from '../../../components/Slide/SlidePresentation';
+import slideData from '../../../data/slides/utilisateurs-permissions.yaml';
+
+
+<ViewSwitcher>
+  <SlidePresentation slot="slides" data={slideData} client:load />
 
 ## L'utilisateur en Linux
 
@@ -19,16 +26,26 @@ Chaque action sur le système est exécutée **au nom d'un utilisateur**. Même 
 Sur un serveur web, ton application Node.js tourne sous un utilisateur dédié (souvent `www-data` ou `node`). Nginx tourne sous un autre. La base de données sous un troisième. Chacun n'a accès qu'à ce dont il a besoin — c'est le **principe du moindre privilège**.
 </Aside>
 
+<Aside type="note" title="Convention d'écriture dans ce chapitre">
+Les exemples utilisent deux styles :
+
+- **Forme générique** avec des chevrons — `sudo adduser <nom_utilisateur>` — indique que tu dois remplacer `<nom_utilisateur>` par la valeur réelle de ton choix (sans les chevrons).
+- **Exemple concret** — `sudo adduser bob` — illustre la commande avec des valeurs choisies. `alice`, `bob`, `webdev` sont des exemples récurrents qu'il faudra adapter chez toi.
+
+Quand les deux styles apparaissent ensemble, la forme générique vient en premier.
+</Aside>
+
 ### Chaque utilisateur a une identité
 
 Quand tu te connectes à un système Linux, tu le fais avec un **nom d'utilisateur** (*username*). En coulisses, Linux associe ce nom à un **UID** (*User ID*) — un numéro unique. C'est le UID que le système utilise réellement pour tout contrôle d'accès; le nom n'est qu'un alias lisible pour les humains.
 
 ```bash
-whoami          # Affiche ton nom d'utilisateur
-id              # Affiche ton UID, ton GID et tes groupes
+whoami                  # Affiche ton nom d'utilisateur
+id                      # Affiche ton UID, ton GID et tes groupes
+id <nom_utilisateur>    # Affiche les infos d'un autre utilisateur
 ```
 
-Chaque utilisateur possède aussi un **répertoire personnel** (*home directory*), typiquement `/home/nom_utilisateur`, où il stocke ses fichiers. C'est son espace privé.
+Chaque utilisateur possède aussi un **répertoire personnel** (*home directory*), typiquement `/home/<nom_utilisateur>`, où il stocke ses fichiers. C'est son espace privé.
 
 <Aside type="note" title="L'utilisateur root">
 L'utilisateur `root` (UID 0) est le **superutilisateur**. Il peut tout faire : lire n'importe quel fichier, modifier la configuration système, créer et supprimer des utilisateurs. C'est un pouvoir nécessaire mais dangereux — une erreur en tant que `root` peut détruire le système.
@@ -49,7 +66,7 @@ apt update                # ❌ Permission refusée — tu n'es pas root
 sudo apt update           # ✅ Exécuté avec les privilèges root
 ```
 
-`sudo` (*superuser do*) te permet d'exécuter **une seule commande** avec les privilèges de `root`, sans changer d'utilisateur. Le système te demande ton mot de passe pour confirmer que c'est bien toi.
+`sudo` (*superuser do*) te permet d'exécuter **une seule commande** avec les privilèges de `root`, sans changer d'utilisateur. Le système te demande **ton propre mot de passe** pour confirmer que c'est bien toi.
 
 <Aside type="caution" title="sudo n'est pas automatique">
 Seuls les utilisateurs autorisés peuvent utiliser `sudo`. Sous Ubuntu, l'utilisateur créé lors de l'installation est ajouté au groupe `sudo` par défaut. Sur d'autres distributions, il faut configurer cet accès manuellement via `/etc/sudoers`.
@@ -59,11 +76,9 @@ Seuls les utilisateurs autorisés peuvent utiliser `sudo`. Sous Ubuntu, l'utilis
 
 Un **groupe** est un ensemble d'utilisateurs qui partagent les mêmes droits d'accès sur certaines ressources. Plutôt que d'accorder des permissions fichier par fichier à chaque utilisateur, on les accorde au groupe — et on ajoute les utilisateurs concernés au groupe.
 
-Chaque utilisateur appartient à au moins un groupe : son **groupe principal** (*primary group*), créé automatiquement avec le même nom que l'utilisateur. Mais un utilisateur peut appartenir à **plusieurs groupes supplémentaires**.
-
 ```bash
-groups              # Affiche les groupes de l'utilisateur courant
-groups alice        # Affiche les groupes d'alice
+groups                      # Affiche les groupes de l'utilisateur courant
+groups <nom_utilisateur>    # Affiche les groupes d'un autre utilisateur
 ```
 
 <Aside type="tip" title="Pertinence web">
@@ -81,11 +96,12 @@ Chaque compte utilisateur est défini par plusieurs informations stockées dans 
 - **Nom d'utilisateur** — l'identifiant de connexion (`alice`, `bob`, `www-data`)
 - **UID** — le numéro unique qui identifie l'utilisateur pour le système
 - **GID** — le numéro du groupe principal
-- **Répertoire personnel** — l'espace de travail (`/home/alice`)
+- **Répertoire personnel** — l'espace de travail (`/home/<nom_utilisateur>`)
 - **Shell** — le programme lancé à la connexion (`/bin/bash`, `/bin/zsh`)
 
 ```bash
-cat /etc/passwd | grep alice
+grep <nom_utilisateur> /etc/passwd
+# Exemple : grep alice /etc/passwd
 # alice:x:1001:1001:Alice Tremblay:/home/alice:/bin/bash
 ```
 
@@ -101,7 +117,7 @@ Les mots de passe ne sont **pas** dans `/etc/passwd` (malgré le nom). Ils sont 
 
 ## À quoi servent les groupes?
 
-Sans les groupes, la gestion des permissions serait un cauchemar. Imagine un projet web avec trois développeurs qui doivent tous modifier les fichiers dans `/var/www/monsite`. Sans groupes, tu aurais deux options :
+Sans les groupes, la gestion des permissions serait un cauchemar. Imagine un projet web avec trois développeurs qui doivent tous modifier les fichiers dans `/var/www/<nom_site>`. Sans groupes, tu aurais deux options :
 
 - Rendre les fichiers accessibles à **tout le monde** — dangereux.
 - Accorder les droits **un par un** à chaque utilisateur — fastidieux et fragile.
@@ -109,14 +125,74 @@ Sans les groupes, la gestion des permissions serait un cauchemar. Imagine un pro
 Avec les groupes, la solution est propre :
 
 <Steps>
-1. Créer un groupe `webdev`.
+1. Créer un groupe (`webdev` par exemple).
 2. Ajouter les trois développeurs au groupe.
-3. Donner au groupe `webdev` les droits de lecture et d'écriture sur `/var/www/monsite`.
+3. Donner au groupe les droits de lecture et d'écriture sur le répertoire du site.
 4. Un quatrième développeur rejoint l'équipe? On l'ajoute au groupe — il a immédiatement les bons droits.
 </Steps>
 
 <Aside type="note" title="Groupes courants sur un serveur Linux">
 `sudo` — peut exécuter des commandes en tant que root. `www-data` — processus du serveur web (Apache, Nginx). `docker` — peut exécuter des commandes Docker sans `sudo`. `adm` — peut lire les fichiers de log système.
+</Aside>
+
+### Groupe principal et groupes supplémentaires
+
+Chaque utilisateur appartient à **exactement un groupe principal** (*primary group*), créé automatiquement à la création du compte avec le même nom que l'utilisateur. C'est ce qui apparaît dans `gid` quand tu fais `id`.
+
+En plus du groupe principal, un utilisateur peut appartenir à **plusieurs groupes supplémentaires** (*supplementary groups*). Ceux-ci apparaissent dans `groups`.
+
+```bash
+id
+# uid=1001(alice) gid=1001(alice) groups=1001(alice),27(sudo),100(webdev)
+#                  ^^ groupe principal    ^^ groupes supplémentaires
+```
+
+Ici, le groupe principal d'alice est `alice`. Elle appartient aussi aux groupes supplémentaires `sudo` et `webdev`.
+
+### Plusieurs groupes, plusieurs accès
+
+Quand le système vérifie si tu as accès à un fichier, il évalue les règles dans cet ordre précis :
+
+<Steps>
+1. Es-tu le **propriétaire** du fichier? → applique les permissions `u` (propriétaire).
+2. Sinon, es-tu membre du **groupe** associé au fichier (qu'il soit ton groupe principal **ou** un de tes groupes supplémentaires)? → applique les permissions `g` (groupe).
+3. Sinon → applique les permissions `o` (autres).
+</Steps>
+
+**Le point important** : la règle s'arrête dès qu'une catégorie correspond. Même si tes permissions « autres » étaient plus généreuses, tu es bloqué aux permissions « groupe » si le fichier est dans un de tes groupes.
+
+<Aside type="caution" title="Un piège contre-intuitif">
+Imagine un fichier `640 root:staff` (propriétaire `root` peut lire/écrire, groupe `staff` peut lire, autres rien). Si tu es dans le groupe `staff`, tu peux **lire** le fichier. Pas de surprise.
+
+Maintenant imagine `604 root:staff` (propriétaire peut lire/écrire, groupe **rien**, autres peuvent lire). Si tu es dans le groupe `staff`... **tu ne peux pas lire le fichier!** Le système s'arrête dès qu'il voit que tu es dans le groupe, même si les permissions sont plus restrictives que celles des « autres ». C'est rare en pratique, mais c'est un piège classique.
+</Aside>
+
+### Groupe actif : le rôle du groupe principal
+
+Si les groupes supplémentaires donnent accès aux fichiers, à quoi sert d'avoir un groupe **principal**? Son rôle : c'est le groupe qui sera **assigné par défaut aux nouveaux fichiers que tu crées**.
+
+```bash
+id -gn                     # Affiche ton groupe principal (actif)
+touch mon_fichier.txt
+ls -l mon_fichier.txt
+# -rw-rw-r-- 1 alice alice 0 jan 15 10:30 mon_fichier.txt
+#                    ^^^^^ groupe principal d'alice, par défaut
+```
+
+Mais tu peux changer temporairement ton groupe actif avec `newgrp` :
+
+```bash
+newgrp <nom_groupe_supplémentaire>
+# Exemple : newgrp webdev
+
+touch autre_fichier.txt
+ls -l autre_fichier.txt
+# -rw-rw-r-- 1 alice webdev 0 jan 15 10:31 autre_fichier.txt
+#                    ^^^^^^ groupe actif temporaire
+```
+
+<Aside type="tip" title="newgrp vs setgid">
+`newgrp` est un outil du **créateur** — il change ce que *tu* utilises comme groupe par défaut. `setgid` (bit `s`) sur un répertoire est un outil du **dossier** — il force les nouveaux fichiers à appartenir au groupe du dossier, peu importe qui crée. Pour les espaces partagés, `setgid` est plus robuste : il fonctionne pour tous les utilisateurs sans qu'ils aient à se rappeler de faire `newgrp`.
 </Aside>
 
 ---
@@ -128,6 +204,8 @@ Avec les groupes, la solution est propre :
 La commande `adduser` crée un compte complet : elle génère le UID, crée le répertoire personnel, copie les fichiers de configuration par défaut et demande un mot de passe.
 
 ```bash
+sudo adduser <nom_utilisateur>
+# Exemple :
 sudo adduser bob
 ```
 
@@ -137,19 +215,73 @@ sudo adduser bob
 
 ### Changer d'utilisateur
 
-```bash
-su - bob            # Ouvre une session complète en tant que bob (mot de passe requis)
-sudo su - bob       # Idem, sans connaître le mot de passe de bob (requiert sudo)
-exit                # Revient à l'utilisateur précédent
-```
+Plusieurs commandes permettent de « devenir » un autre utilisateur, mais elles ne sont pas équivalentes. Le choix dépend de ce que tu veux faire et du mot de passe que tu connais.
 
-Le tiret (`-`) après `su` est important : il charge l'environnement complet de l'utilisateur cible (variables d'environnement, répertoire personnel, shell). Sans le tiret, tu changes d'identité mais tu restes dans l'environnement de l'utilisateur précédent — source fréquente de confusion.
+<Tabs>
+  <TabItem label="su - (login complet)">
+    ```bash
+    su - <nom_utilisateur>
+    # Exemple :
+    su - bob
+    ```
+
+    - Demande **le mot de passe de l'utilisateur cible** (bob).
+    - Charge l'**environnement complet** de bob : `$HOME`, `$PATH`, `$PWD`, variables de son `.bashrc`.
+    - Équivaut à une connexion fraîche — comme si bob venait de se connecter.
+    - Le tiret (`-`) est **essentiel** : sans lui, tu gardes l'environnement de l'utilisateur précédent.
+  </TabItem>
+  <TabItem label="sudo -u (commande unique)">
+    ```bash
+    sudo -u <nom_utilisateur> <commande>
+    # Exemple :
+    sudo -u bob ls /home/bob
+    ```
+
+    - Demande **ton propre mot de passe sudo** (pas celui de bob).
+    - Exécute **une seule commande** en tant que bob, puis revient.
+    - Garde l'environnement **actuel** (ton `$PWD`, ton `$PATH`, etc.).
+    - Utile pour les scripts et les tâches ponctuelles.
+  </TabItem>
+  <TabItem label="sudo -i -u (login simulé)">
+    ```bash
+    sudo -i -u <nom_utilisateur>
+    # Exemple :
+    sudo -i -u bob
+    ```
+
+    - Demande **ton propre mot de passe sudo**.
+    - Charge l'environnement complet de bob (comme `su -`).
+    - Le meilleur des deux mondes : login complet **sans connaître le mot de passe de la cible**.
+    - C'est souvent ce qu'on utilise en pratique sur un serveur.
+  </TabItem>
+  <TabItem label="ssh (vraie connexion)">
+    ```bash
+    ssh <nom_utilisateur>@<serveur>
+    # Exemple :
+    ssh bob@serveur.exemple.com
+    ```
+
+    - Demande le mot de passe de bob **ou** utilise une clé SSH.
+    - Crée une **nouvelle session** complète via PAM (incluant les modules de sécurité).
+    - Comportement identique à une connexion physique à la machine.
+  </TabItem>
+</Tabs>
+
+<Aside type="note" title="Ce qui reste identique dans tous les cas">
+Les **groupes** que tu as en tant qu'utilisateur cible sont les mêmes, peu importe la méthode utilisée (`su`, `sudo -u`, `sudo -i -u`, `ssh`). Le système charge toujours l'ensemble des groupes du compte. La différence se situe au niveau de l'**environnement** (`$PATH`, `$HOME`, `$PWD`, variables du shell) et du **mot de passe demandé**.
+</Aside>
+
+Pour sortir et revenir à ton utilisateur précédent :
+
+```bash
+exit    # ou Ctrl+D
+```
 
 ### Supprimer un utilisateur
 
 ```bash
-sudo deluser bob              # Supprime le compte, conserve le répertoire personnel
-sudo deluser --remove-home bob   # Supprime le compte ET le répertoire
+sudo deluser <nom_utilisateur>                  # Conserve le répertoire personnel
+sudo deluser --remove-home <nom_utilisateur>    # Supprime tout
 ```
 
 ---
@@ -159,30 +291,46 @@ sudo deluser --remove-home bob   # Supprime le compte ET le répertoire
 ### Créer un groupe
 
 ```bash
+sudo addgroup <nom_groupe>
+# Exemple :
 sudo addgroup webdev
 ```
 
 ### Ajouter un utilisateur à un groupe
 
 ```bash
-sudo usermod -aG webdev alice     # Ajoute alice au groupe webdev
+sudo usermod -aG <nom_groupe> <nom_utilisateur>
+# Exemple :
+sudo usermod -aG webdev alice
 ```
 
 <Aside type="caution" title="Le drapeau -a est critique">
 Sans `-a` (*append*), `usermod -G` **remplace** tous les groupes secondaires de l'utilisateur par celui spécifié. Avec `-a`, il **ajoute** le groupe à la liste existante. Oublier `-a` peut retirer un utilisateur du groupe `sudo` — et te bloquer hors de ton propre système.
 </Aside>
 
-L'ajout à un groupe prend effet à la prochaine connexion. Pour appliquer immédiatement sans se déconnecter :
+### Effet immédiat vs reconnexion
+
+L'ajout à un groupe via `usermod -aG` modifie la base de données des utilisateurs immédiatement, mais **ta session en cours ne le voit pas**. La liste des groupes actifs dans une session a été figée au moment de la connexion.
+
+Trois manières d'activer le nouveau groupe :
 
 ```bash
-newgrp webdev       # Active le groupe dans la session courante
+# 1. Se déconnecter et se reconnecter (propre, mais pas toujours pratique)
+exit
+
+# 2. Activer le groupe dans la session courante
+newgrp <nom_groupe>
+# Exemple : newgrp webdev
+
+# 3. Vérifier les groupes tels que stockés (indépendamment de ta session)
+groups <nom_utilisateur>
 ```
 
 ### Vérifier les groupes
 
 ```bash
-groups alice        # Liste les groupes d'alice
-getent group webdev # Liste les membres du groupe webdev
+groups <nom_utilisateur>        # Liste les groupes d'un utilisateur
+getent group <nom_groupe>       # Liste les membres d'un groupe
 ```
 
 ---
@@ -204,6 +352,8 @@ Pour chaque niveau, trois **types de permissions** sont possibles :
 - **`x`** (*execute*) — exécuter (fichier) ou traverser (répertoire)
 
 ```bash
+ls -l <chemin_fichier>
+# Exemple :
 ls -l index.js
 # -rwxr-xr-- 1 alice webdev 2048 jan 15 10:30 index.js
 ```
@@ -252,6 +402,96 @@ Ainsi, `rwxr-xr--` s'écrit **754** en notation octale.
 
 ---
 
+## Héritage des permissions
+
+Une question subtile : quand un fichier est créé, déplacé ou copié, **d'où viennent ses permissions et son groupe**? Les règles ne sont pas uniformes, et elles sont à l'origine de nombreux problèmes en production.
+
+### À la création d'un fichier
+
+Quand tu crées un fichier avec `touch`, `echo >`, un éditeur de texte ou n'importe quelle autre méthode :
+
+- **Propriétaire** — c'est toi, l'utilisateur qui exécute la commande.
+- **Groupe** — c'est ton **groupe principal** par défaut. Exception : si le répertoire parent a le bit `setgid`, le fichier hérite du groupe du parent.
+- **Permissions** — calculées à partir de `666` (fichier) ou `777` (répertoire) moins la valeur de ton `umask`. Avec `umask 0002` (défaut Ubuntu), les nouveaux fichiers ont donc `664` (`rw-rw-r--`) et les nouveaux répertoires ont `775`.
+
+```bash
+umask                           # Affiche ton umask courant
+umask 0002                      # Modifie umask pour la session
+```
+
+<Aside type="note" title="Les permissions du parent ne sont PAS héritées">
+Contrairement à ce qu'on pourrait croire, un fichier **n'hérite pas des permissions du dossier** qui le contient. Si `/dossier` a les permissions `700`, un fichier créé à l'intérieur peut très bien avoir `664` (selon ton umask). Seule l'**accessibilité** du dossier change qui peut *atteindre* le fichier, mais le fichier lui-même garde ses permissions propres.
+</Aside>
+
+### Lors d'un `cp` ou d'un `mv`
+
+Les deux opérations ont des effets **très différents** sur les permissions et le groupe. Cette distinction est une source classique de bogues.
+
+<Tabs>
+  <TabItem label="cp (copie)">
+    `cp` crée un **nouveau fichier** à destination. Les règles de création standard s'appliquent :
+
+    - Nouveau propriétaire = toi
+    - Nouveau groupe = ton groupe principal (ou celui du parent si setgid)
+    - Nouvelles permissions = calculées selon ton umask
+
+    ```bash
+    cp source.txt /dossier_avec_setgid/copie.txt
+    # copie.txt appartient à TOI, groupe du dossier (setgid s'applique)
+    ```
+
+    Tu peux préserver les attributs originaux avec `cp -p` (ou `cp --preserve`).
+  </TabItem>
+  <TabItem label="mv (déplacement)">
+    `mv` **déplace** le fichier existant. Les attributs sont **conservés** :
+
+    - Propriétaire inchangé
+    - Groupe inchangé (même si le dossier de destination a setgid!)
+    - Permissions inchangées
+
+    ```bash
+    mv source.txt /dossier_avec_setgid/deplace.txt
+    # deplace.txt garde son propriétaire et groupe D'ORIGINE
+    ```
+
+    Attention : un `mv` ne ré-applique pas `setgid`, ce qui peut briser les permissions d'un espace partagé.
+  </TabItem>
+</Tabs>
+
+<Aside type="caution" title="Piège collaboratif">
+Alice copie un fichier dans l'espace partagé du club → `setgid` s'applique, tout va bien.
+
+Alice **déplace** un fichier dans l'espace partagé du club → le fichier garde son groupe d'origine (`alice`), et bob ne peut pas le modifier.
+
+Solution : après un `mv` dans un espace partagé, vérifie le groupe avec `ls -l`. Si nécessaire, corrige avec `chgrp`.
+</Aside>
+
+### Lors d'un changement des permissions du parent
+
+Modifier les permissions d'un dossier n'affecte **pas** les fichiers qu'il contient :
+
+```bash
+chmod 700 /dossier          # Change les permissions du dossier
+ls -l /dossier/fichier.txt  # Le fichier garde ses permissions d'origine
+```
+
+Pour appliquer des permissions à un dossier **et à tout son contenu**, utilise `-R` (récursif) :
+
+```bash
+chmod -R 755 <chemin_dossier>
+```
+
+<Aside type="caution" title="Le piège de chmod -R">
+`chmod -R 755` applique `755` à **tous les éléments**, fichiers compris. Or, `755` sur un fichier lui donne l'exécution — rarement ce qu'on veut pour un fichier HTML, CSS ou JSON. La bonne pratique est de distinguer fichiers et répertoires :
+
+```bash
+find <chemin_dossier> -type d -exec chmod 755 {} \;   # répertoires en 755
+find <chemin_dossier> -type f -exec chmod 644 {} \;   # fichiers en 644
+```
+</Aside>
+
+---
+
 ## Commandes : chmod, chown, chgrp
 
 ### chmod — modifier les permissions
@@ -263,6 +503,8 @@ Ainsi, `rwxr-xr--` s'écrit **754** en notation octale.
     On spécifie **qui** (`u`, `g`, `o`, `a` pour tous), **l'opération** (`+` ajouter, `-` retirer, `=` définir) et **quelle permission** (`r`, `w`, `x`).
 
     ```bash
+    chmod <cible><opération><permissions> <chemin>
+    # Exemples :
     chmod u+x script.sh         # Ajoute l'exécution pour le propriétaire
     chmod g+rw fichier.txt      # Ajoute lecture + écriture pour le groupe
     chmod o-rwx secret.key      # Retire tout pour les autres
@@ -273,6 +515,8 @@ Ainsi, `rwxr-xr--` s'écrit **754** en notation octale.
     On donne directement les trois chiffres correspondant aux permissions du propriétaire, du groupe et des autres.
 
     ```bash
+    chmod <octal> <chemin>
+    # Exemples :
     chmod 755 script.sh         # rwxr-xr-x — script exécutable standard
     chmod 644 index.html        # rw-r--r-- — fichier web lisible par tous
     chmod 600 id_rsa            # rw------- — clé SSH privée
@@ -281,72 +525,155 @@ Ainsi, `rwxr-xr--` s'écrit **754** en notation octale.
   </TabItem>
 </Tabs>
 
-<Aside type="caution" title="L'option -R (récursif)">
-`chmod -R 755 /var/www/monsite` applique les permissions à tout le contenu du répertoire. Attention : 755 est correct pour les *répertoires* mais donne l'exécution aux *fichiers* — ce qui est rarement souhaitable. En pratique, on sépare souvent les deux : `find /var/www -type d -exec chmod 755 {} \;` pour les répertoires et `find /var/www -type f -exec chmod 644 {} \;` pour les fichiers.
-</Aside>
-
 ### chown — changer le propriétaire
 
 `chown` (*change owner*) modifie le propriétaire et/ou le groupe d'un fichier.
 
 ```bash
-sudo chown alice fichier.txt            # Change le propriétaire (requiert sudo)
-sudo chown alice:webdev fichier.txt     # Change propriétaire ET groupe
-sudo chown -R alice:webdev /var/www/    # Récursif sur tout le répertoire
-
-chown :webdev fichier.txt               # Change seulement le groupe (peut se faire sans sudo
-                                        # si tu possèdes le fichier et es dans webdev)
+sudo chown <nouveau_propriétaire> <chemin>              # Propriétaire seulement
+sudo chown <nouveau_propriétaire>:<nouveau_groupe> <chemin>  # Les deux
+sudo chown :<nouveau_groupe> <chemin>                   # Groupe seulement
+sudo chown -R <propriétaire>:<groupe> <chemin_dossier>  # Récursif
 ```
 
-<Aside type="note" title="Quand est-ce que sudo est requis?">
-Seul `root` peut **changer le propriétaire** d'un fichier. Sans cette règle, n'importe qui pourrait s'attribuer la propriété de n'importe quel fichier, ce qui ferait s'effondrer tout le modèle de permissions.
+Exemples :
 
-Par contre, tu peux **changer le groupe** d'un fichier sans sudo, à deux conditions : tu dois être le propriétaire du fichier, et tu dois être membre du groupe cible. C'est ce qui permet à un développeur de faire `chgrp webdev index.html` sur ses propres fichiers dans `/var/www/`.
+```bash
+sudo chown alice fichier.txt
+sudo chown alice:webdev fichier.txt
+sudo chown :webdev fichier.txt
+sudo chown -R alice:webdev /var/www/monsite
+```
+
+<Aside type="note" title="Pourquoi sudo?">
+Seul `root` peut changer le propriétaire d'un fichier. C'est logique : si n'importe qui pouvait s'attribuer la propriété de n'importe quel fichier, tout le modèle de permissions s'effondrerait.
 </Aside>
 
 ### chgrp — changer le groupe
 
-`chgrp` (*change group*) modifie uniquement le groupe associé à un fichier. C'est un raccourci pour `chown :groupe`.
+`chgrp` (*change group*) modifie uniquement le groupe associé à un fichier. C'est un raccourci pour `chown :<groupe>`.
 
 ```bash
-chgrp webdev index.js                  # Change le groupe (si tu possèdes et es membre)
-sudo chgrp webdev /etc/nginx/nginx.conf  # sudo requis si tu ne possèdes pas le fichier
-chgrp -R webdev /var/www/monsite       # Récursif
+sudo chgrp <nom_groupe> <chemin>                        # Un fichier
+sudo chgrp -R <nom_groupe> <chemin_dossier>             # Récursif
+```
+
+Exemples :
+
+```bash
+sudo chgrp webdev index.js
+sudo chgrp -R webdev /var/www/monsite
 ```
 
 ### Cas pratique : configurer un site web
 
 Voici un scénario complet qui combine toutes les commandes. Tu configures les permissions d'un site web pour que l'équipe de développement puisse modifier les fichiers, et que le serveur web (`www-data`) puisse les lire pour les servir aux visiteurs.
 
-<details>
-<summary>Solution complète</summary>
+Dans cet exemple, les développeurs s'appellent `alice` et `bob`, leur groupe est `webdev`, et le site est dans `/var/www/monsite`. Adapte ces noms à ton cas.
+
+#### Étape 1 — Préparer le dossier du site
+
+Avant de parler permissions, il faut que le dossier existe. `/var/www/` est le répertoire standard pour les sites web sous Debian/Ubuntu (créé par défaut à l'installation d'Apache ou Nginx). On y ajoute un sous-dossier pour notre site :
 
 ```bash
-# 1. Créer le groupe de développement
-sudo addgroup webdev
-
-# 2. Ajouter les développeurs au groupe
-sudo usermod -aG webdev alice
-sudo usermod -aG webdev bob
-
-# 3. Définir le propriétaire et le groupe du site
-sudo chown -R alice:webdev /var/www/monsite
-
-# 4. Appliquer les permissions
-#    — Répertoires : 2775 (rwxrwxr-x + setgid) pour que les nouveaux
-#      fichiers héritent du groupe webdev
-sudo find /var/www/monsite -type d -exec chmod 2775 {} \;
-#    — Fichiers : 664 (rw-rw-r--) — modifiables par le groupe, lisibles par tous
-sudo find /var/www/monsite -type f -exec chmod 664 {} \;
+sudo mkdir -p /var/www/monsite
+ls -ld /var/www/monsite
+# drwxr-xr-x 2 root root 4096 ... /var/www/monsite
 ```
 
-Avec cette configuration :
+Par défaut, le dossier appartient à `root:root` avec permissions `755`. C'est notre point de départ — on va tout reconfigurer.
 
-- alice et bob peuvent modifier les fichiers (membres du groupe `webdev`)
-- `www-data` peut lire les fichiers en tant qu'« autre » (permissions `r--` pour tous)
-- Les nouveaux fichiers créés par alice ou bob hériteront automatiquement du groupe `webdev` grâce à `setgid` sur les répertoires
+#### Étape 2 — Créer le groupe de développement
 
-</details>
+Un groupe dédié va regrouper toutes les personnes autorisées à modifier le site :
+
+```bash
+sudo addgroup webdev
+```
+
+Vérifie que le groupe existe :
+
+```bash
+getent group webdev
+# webdev:x:1002:
+```
+
+Le numéro de GID peut varier selon ton système — ce qui compte, c'est que la ligne apparaisse.
+
+#### Étape 3 — Ajouter les développeurs au groupe
+
+```bash
+sudo usermod -aG webdev alice
+sudo usermod -aG webdev bob
+```
+
+Vérifie que chaque développeur est bien dans le groupe :
+
+```bash
+groups alice
+# alice : alice sudo webdev
+groups bob
+# bob : bob webdev
+```
+
+<Aside type="caution" title="Rappel : session en cours">
+Si alice est connectée pendant l'ajout, sa session en cours **ne voit pas encore** le groupe `webdev`. Elle devra se déconnecter/reconnecter (ou utiliser `newgrp webdev`) pour que le groupe soit actif dans son shell.
+</Aside>
+
+#### Étape 4 — Définir le propriétaire et le groupe
+
+On donne la propriété du site à `alice` (par exemple) et le groupe à `webdev` :
+
+```bash
+sudo chown -R alice:webdev /var/www/monsite
+```
+
+Le `-R` (récursif) applique le changement au dossier **et** à tout son contenu — important si tu as déjà des fichiers dedans.
+
+Vérifie :
+
+```bash
+ls -ld /var/www/monsite
+# drwxr-xr-x 2 alice webdev 4096 ... /var/www/monsite
+#               ^^^^^ ^^^^^^ propriétaire et groupe corrects
+```
+
+#### Étape 5 — Appliquer les permissions du dossier
+
+On passe le dossier à `2775` : `rwxrwxr-x` + bit `setgid`. Tout est fait en une seule commande sur une seule cible :
+
+```bash
+sudo chmod 2775 /var/www/monsite
+```
+
+Vérifie :
+
+```bash
+ls -ld /var/www/monsite
+# drwxrwsr-x 2 alice webdev 4096 ... /var/www/monsite
+#     ^^^  le 's' dans la position groupe confirme que setgid est actif
+```
+
+Le `s` à la place du `x` dans la section groupe indique que `setgid` est bien appliqué. Les nouveaux fichiers créés dans ce dossier hériteront automatiquement du groupe `webdev`.
+
+#### Étape 6 — Tester la configuration
+
+Crée un fichier en tant qu'alice et vérifie que tout fonctionne :
+
+```bash
+sudo -u alice bash -c 'echo "<h1>Mon site</h1>" > /var/www/monsite/index.html'
+ls -l /var/www/monsite/index.html
+# -rw-rw-r-- 1 alice webdev 19 ... index.html
+#   ^^^^^^^^         ^^^^^^ groupe webdev grâce à setgid
+#   permissions 664 grâce à umask 002
+```
+
+Deux vérifications importantes :
+
+- Le **groupe** affiché est `webdev` (et non `alice`) → `setgid` fonctionne.
+- Les **permissions** sont `rw-rw-r--` (664) → l'`umask` par défaut d'Ubuntu (`0002`) a fait son travail : écriture pour le groupe, lecture pour les autres.
+
+Bob pourra donc modifier ce fichier, et `www-data` pourra le lire. La configuration est complète.
 
 <Aside type="tip" title="Pourquoi ne pas ajouter www-data au groupe webdev?">
 On pourrait être tenté d'ajouter `www-data` au groupe `webdev` pour « lui donner accès ». Ce serait une mauvaise pratique : avec les permissions du groupe à `rw` (pour permettre aux développeurs d'écrire), le serveur web se retrouverait aussi avec le droit de **modifier** les fichiers qu'il sert. Or, un serveur web bien configuré ne devrait normalement pas pouvoir réécrire ses propres fichiers — en cas de compromission, un attaquant ne peut alors pas modifier le site. Avec notre configuration à `664`, `www-data` lit les fichiers en tant qu'« autre » avec un accès strictement en lecture. C'est plus simple ET plus sécuritaire.
@@ -355,3 +682,11 @@ On pourrait être tenté d'ajouter `www-data` au groupe `webdev` pour « lui don
 <Aside type="note" title="Le bit setgid (g+s) dans 2775">
 Le `2` au début de `2775` active le **bit setgid** sur le répertoire. Les nouveaux fichiers créés à l'intérieur héritent automatiquement du groupe du répertoire (ici `webdev`), plutôt que du groupe principal de l'utilisateur qui les crée. Indispensable pour le travail collaboratif. Sans setgid, un fichier créé par alice aurait le groupe `alice` et bob ne pourrait pas le modifier.
 </Aside>
+
+<Aside type="note" title="Et si le dossier contenait déjà des fichiers?">
+Dans notre scénario, le dossier était vide : les permissions des nouveaux fichiers sont gérées automatiquement par `setgid` (pour le groupe) et l'`umask` (pour les permissions). Tout va bien.
+
+Si tu reprends un site existant avec des fichiers déjà en place, ces fichiers ne sont **pas** affectés par `chmod` sur le dossier parent (souviens-toi de la section sur l'héritage). Il faudrait appliquer les permissions à chaque fichier individuellement. La commande `find` permet de le faire en masse — mais c'est un outil qu'on verra dans un chapitre ultérieur.
+</Aside>
+
+</ViewSwitcher>

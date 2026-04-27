@@ -1,0 +1,684 @@
+---
+title: Révision pour l'intra
+description: Activités de révision couvrant le rôle du système d'exploitation, le système de fichier, les VM et conteneurs, les paquets, les utilisateurs et les permissions — dans le contexte du déploiement d'applications web.
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+Cette page rassemble des activités pour valider les notions vues depuis le début du cours, en préparation de l'évaluation intra. 
+
+## Section 1 — QCM
+
+Une seule bonne réponse par question.
+
+---
+
+**Q1.** Le rôle principal d'un système d'exploitation est:
+
+- A. Exécuter directement les programmes utilisateur sur le matériel
+- B. Servir d'intermédiaire entre les programmes et le matériel, en gérant les ressources
+- C. Compiler le code source en code machine
+- D. Fournir une interface graphique aux utilisateurs
+
+<details>
+<summary>Réponse</summary>
+
+**B.** Le SE gère le CPU (ordonnancement), la mémoire, le système de fichier, les périphériques et les processus. Il offre des **abstractions** (fichiers, processus, sockets) pour que les programmes n'aient pas à parler directement au matériel.
+
+</details>
+
+
+**Q2.** Quelle commande affiche le chemin absolu du répertoire courant?
+
+- A. `cwd`
+- B. `dir`
+- C. `pwd`
+- D. `path`
+
+<details>
+<summary>Réponse</summary>
+
+**C.** `pwd` = *print working directory*.
+
+</details>
+
+
+**Q3.** La commande `cd ..` permet de:
+
+- A. Naviguer vers le répertoire racine
+- B. Naviguer vers le répertoire parent
+- C. Retourner au répertoire personnel
+- D. Retourner au dernier répertoire visité
+
+<details>
+<summary>Réponse</summary>
+
+**B.** `..` désigne toujours le parent. Pour la racine: `cd /`. Pour le home: `cd` ou `cd ~`. Pour le dernier répertoire: `cd -`.
+
+</details>
+
+
+**Q4.** Sur un serveur web Linux, où se trouvent par défaut les fichiers servis publiquement par Nginx ou Apache?
+
+- A. `/home/www`
+- B. `/etc/www`
+- C. `/var/www`
+- D. `/usr/local/www`
+
+<details>
+<summary>Réponse</summary>
+
+**C.** `/var/www` (souvent `/var/www/html` par défaut). Cohérent avec le FHS: `/var` contient les données qui changent (logs, sites, caches), à l'opposé de `/etc` (configuration) ou `/usr` (binaires installés).
+
+</details>
+
+
+**Q5.** Le répertoire `/etc` contient principalement:
+
+- A. Les binaires des programmes système
+- B. Les fichiers de configuration système
+- C. Les bibliothèques partagées
+- D. Les fichiers temporaires
+
+<details>
+<summary>Réponse</summary>
+
+**B.** Exemples: `/etc/passwd`, `/etc/group`, `/etc/nginx/`, `/etc/apt/sources.list`. Les binaires sont dans `/usr/bin` ou `/usr/sbin`, les bibliothèques dans `/usr/lib`, les fichiers temporaires dans `/tmp`.
+
+</details>
+
+
+**Q6.** Quelle est la différence entre `>` et `>>`?
+
+- A. `>` écrase le contenu du fichier, `>>` ajoute à la fin
+- B. `>` redirige stdout, `>>` redirige stderr
+- C. Aucune, ce sont des synonymes
+- D. `>` fonctionne pour les fichiers, `>>` pour les répertoires
+
+<details>
+<summary>Réponse</summary>
+
+**A.** Distinction critique en pratique: utiliser `>` par erreur sur un fichier de log existant **détruit** son contenu.
+
+</details>
+
+
+**Q7.** Un lien symbolique:
+
+- A. Pointe vers un autre fichier ou répertoire par son chemin
+- B. Est une copie complète du fichier original
+- C. Crée un partage entre utilisateurs sur le réseau
+- D. Compresse le fichier original
+
+<details>
+<summary>Réponse</summary>
+
+**A.** Le lien stocke un *chemin* vers la cible. Si la cible est supprimée ou déplacée, le lien devient cassé (*dangling*) — c'est un piège classique en déploiement web quand on lie `/var/www/site-actif` vers une version précise du code.
+
+</details>
+
+
+**Q8.** Un conteneur (ex: Docker) se distingue d'une machine virtuelle parce qu'il:
+
+- A. Émule complètement le matériel
+- B. N'a pas accès au système de fichier de l'hôte
+- C. Nécessite un hyperviseur de type 1
+- D. Partage le noyau du système hôte
+
+<details>
+<summary>Réponse</summary>
+
+**D.** Pas d'OS invité ni de noyau supplémentaire: le conteneur est un (groupe de) processus isolé(s) par des mécanismes du noyau hôte (namespaces, cgroups). C'est ce qui explique son démarrage rapide et sa faible empreinte.
+
+</details>
+
+
+**Q9.** Sous Debian/Ubuntu, la commande pour installer le paquet `nginx` avec ses dépendances est:
+
+- A. `dpkg install nginx`
+- B. `apt-get nginx`
+- C. `apt install nginx`
+- D. `install-pkg nginx`
+
+<details>
+<summary>Réponse</summary>
+
+**C.** `apt` est l'outil de haut niveau qui résout les dépendances. `dpkg` est l'outil bas niveau qui installe un `.deb` déjà téléchargé, sans gérer les dépendances.
+
+</details>
+
+
+**Q10.** Lorsqu'on installe un paquet avec `apt`, le gestionnaire:
+
+- A. Télécharge uniquement le paquet demandé sans rien d'autre
+- B. Lance le paquet automatiquement après l'installation
+- C. Compile le code source à partir d'un dépôt Git
+- D. Résout et installe automatiquement les paquets dont dépend le paquet demandé
+
+<details>
+<summary>Réponse</summary>
+
+**D.** C'est la valeur principale d'un gestionnaire de paquets: la **résolution de dépendances** en cascade. Installer `nginx` peut amener une vingtaine de paquets supplémentaires (bibliothèques OpenSSL, PCRE, etc.) sans intervention manuelle.
+
+</details>
+
+
+**Q11.** Le fichier `/etc/passwd`:
+
+- A. Contient les mots de passe chiffrés des utilisateurs
+- B. Contient les informations des comptes (UID, shell, home, etc.) — sans les mots de passe chiffrés
+- C. N'est lisible que par root
+- D. Contient uniquement la liste des groupes
+
+<details>
+<summary>Réponse</summary>
+
+**B.** Malgré son nom, `/etc/passwd` ne contient **plus** les mots de passe (déplacés vers `/etc/shadow`, lisible uniquement par root, pour des raisons de sécurité). Il est lisible par tous parce que de nombreux programmes ont besoin de résoudre `UID → nom`.
+
+</details>
+
+
+**Q12.** Le mode octal `755` correspond à quelles permissions symboliques?
+
+- A. `rwxr-xr-x`
+- B. `rwxrw-rw-`
+- C. `rw-r--r--`
+- D. `rwxrwx---`
+
+<details>
+<summary>Réponse</summary>
+
+**A.** Chaque chiffre = un triplet rwx où r=4, w=2, x=1. Donc 7=4+2+1=rwx, 5=4+0+1=r-x. C'est le mode classique d'un dossier de site web public.
+
+</details>
+
+
+**Q13.** Sur un fichier `index.html`, à quoi correspond la permission `x` (exécution)?
+
+- A. Permet à un serveur web de lire le fichier
+- B. Permet d'exécuter le fichier comme un programme — ce qui n'a pas de sens pour un fichier HTML statique
+- C. Permet de modifier le fichier
+- D. Permet de supprimer le fichier
+
+<details>
+<summary>Réponse</summary>
+
+**B.** Pour un contenu statique servi par un serveur web, seule la permission `r` est nécessaire. Mettre `x` sur un fichier HTML n'apporte rien et peut prêter à confusion. C'est `w` qui contrôle la modification, et la suppression dépend du dossier qui contient le fichier (pas du fichier lui-même).
+
+</details>
+
+
+**Q14.** Sur un **répertoire**, la permission `x`:
+
+- A. N'a aucun effet, seule la lecture compte
+- B. Permet de créer des fichiers à l'intérieur
+- C. Permet de **traverser** le répertoire (y entrer, accéder à son contenu via un chemin)
+- D. Permet de supprimer le répertoire
+
+<details>
+<summary>Réponse</summary>
+
+**C.** Distinction essentielle:
+
+- `r` sur un dossier: permet de **lister** les noms (ex: `ls`)
+- `x` sur un dossier: permet d'**accéder** à un fichier dont on connaît déjà le nom (ex: `cat dossier/fichier`)
+- `w` sur un dossier: permet de créer/supprimer/renommer des entrées
+
+Conséquence web: si Nginx a `r` mais pas `x` sur un dossier intermédiaire du chemin, il peut lister mais ne peut **pas** servir de fichier qui s'y trouve.
+
+</details>
+
+
+**Q15.** Pour qu'un serveur Nginx (utilisateur `www-data`) puisse servir des fichiers dans `/var/www/site`, il faut au minimum:
+
+- A. Que `www-data` soit propriétaire des fichiers
+- B. Que `www-data` ait `r` sur les fichiers et `rx` sur **chaque** dossier du chemin
+- C. Que `www-data` ait `rwx` sur tout
+- D. Que les fichiers aient `chmod 777`
+
+<details>
+<summary>Réponse</summary>
+
+**B.** Le serveur n'a besoin de lire que ce qu'il sert (jamais d'écrire). Et il doit pouvoir **traverser** chacun des dossiers du chemin (`/`, `/var`, `/var/www`, `/var/www/site`) — d'où le `x` sur les répertoires. `chmod 777` (option **d**) « fonctionnerait » mais viole grossièrement le principe du moindre privilège.
+
+</details>
+
+
+**Q16.** La commande `sudo` permet à un utilisateur:
+
+- A. D'exécuter une commande avec les privilèges d'un autre utilisateur, si autorisé
+- B. De se connecter en tant que root sans mot de passe
+- C. De désactiver les permissions sur un fichier
+- D. De changer son propre mot de passe
+
+<details>
+<summary>Réponse</summary>
+
+**A.** L'autorisation est définie dans `/etc/sudoers` (édité avec `visudo`). Cela permet d'accorder *exactement* les privilèges nécessaires (par commande, par utilisateur, par hôte) au lieu de partager le mot de passe root.
+
+</details>
+
+
+**Q17.** Le **principe du moindre privilège** recommande qu'un service web s'exécute sous:
+
+- A. L'utilisateur `root` pour avoir tous les accès
+- B. Un utilisateur de service dédié (ex: `www-data`) avec uniquement les permissions nécessaires
+- C. L'utilisateur ayant déployé le code
+- D. N'importe quel utilisateur disponible
+
+<details>
+<summary>Réponse</summary>
+
+**B.** Si Nginx s'exécutait en root et qu'une faille était exploitée, l'attaquant aurait un contrôle total du serveur. Avec un utilisateur de service confiné, l'impact d'une compromission reste circonscrit aux fichiers que cet utilisateur peut lire/écrire.
+
+</details>
+
+## Section 2 — Questions à développement
+
+Ces questions visent la compréhension des concepts fondamentaux. Une bonne réponse fait des liens explicites avec ce que tu sais du déploiement web.
+
+---
+
+### Q1. Rôle du système d'exploitation.
+
+Explique en quoi consiste le rôle d'un système d'exploitation. Identifie au moins **trois ressources** qu'il gère, et explique pourquoi un développeur web devrait s'intéresser au SE de son serveur de déploiement.
+
+<details>
+<summary>Éléments de réponse</summary>
+
+Le SE est l'**intermédiaire** entre le matériel et les programmes. Il fournit des abstractions (fichiers, processus, sockets) qui rendent les programmes portables et lui permettent d'arbitrer l'accès aux ressources entre processus concurrents.
+
+Ressources gérées (au moins trois parmi):
+
+- **CPU**: ordonnancement des processus, partage du temps de calcul
+- **Mémoire**: allocation, mémoire virtuelle, isolation entre processus
+- **Système de fichier**: organisation, droits d'accès, lecture/écriture sur disque
+- **Périphériques**: pilotes, accès à la carte réseau, au clavier, à l'écran
+- **Utilisateurs et processus**: identité, permissions, communication inter-processus
+
+**Pourquoi c'est pertinent pour le développeur web:**
+
+- Comprendre **sous quel utilisateur** s'exécute le serveur web conditionne tout le modèle de permissions du déploiement
+- Lire les **logs système** (`/var/log/`) est essentiel pour diagnostiquer un service qui ne démarre pas
+- L'usage des ressources (mémoire, CPU, descripteurs de fichiers) explique souvent les pannes en production
+- Le **gestionnaire de paquets** du SE détermine comment installer Node, PHP, une base de données, etc.
+- Les choix de déploiement (VM vs conteneur, choix de la distribution) sont des choix au niveau SE qui ont un impact direct sur la stabilité et la reproductibilité
+
+</details>
+
+---
+
+### Q2. Machines virtuelles vs conteneurs.
+
+Compare une machine virtuelle (VM) et un conteneur (type Docker) sur les axes suivants: **isolation**, **partage du noyau**, **empreinte mémoire**. Indique ensuite un scénario où tu privilégierais une VM, et un scénario où tu privilégierais un conteneur, dans le contexte d'un projet web.
+
+<details>
+<summary>Éléments de réponse</summary>
+
+| Axe | VM | Conteneur |
+|---|---|---|
+| Isolation | Forte (matériel virtualisé via hyperviseur) | Plus faible (processus isolés, mais noyau partagé) |
+| Noyau | OS invité complet, avec son propre noyau | Pas de noyau invité, noyau de l'hôte |
+| Empreinte | Lourde — Go de RAM et de disque | Légère — Mo |
+
+**Scénarios — VM:**
+
+- Besoin d'un **OS différent** de l'hôte (ex: Windows sur un hôte Linux)
+- Besoin d'**isolation forte** (multi-tenant avec clients qui ne se font pas confiance, ou application qui doit pouvoir charger des modules noyau)
+- Tester un noyau ou un kernel patché
+
+**Scénarios — Conteneur:**
+
+- Déploiement d'une application web standard (Node, PHP, Python) sur Linux
+- Architecture **microservices** où chaque service tourne dans son conteneur
+- Reproductibilité **dev = test = prod** (l'image est la même partout)
+- Besoin de **scaler** rapidement à la demande
+
+</details>
+
+---
+
+### Q3. Paquets et gestionnaire de paquets.
+
+Explique ce qu'est un paquet logiciel sous Linux et le rôle d'un gestionnaire de paquets comme `apt`. Quels problèmes le gestionnaire résout-il qu'il serait fastidieux ou risqué de gérer manuellement? Donne un exemple concret tiré du déploiement d'une application web.
+
+<details>
+<summary>Éléments de réponse</summary>
+
+**Un paquet** est une archive (sous Debian/Ubuntu, un fichier `.deb`) qui contient:
+
+- les binaires et fichiers du logiciel,
+- des **métadonnées**: nom, version, description, **dépendances**, scripts d'installation/désinstallation.
+
+**Un gestionnaire de paquets** (apt, dpkg en bas niveau) installe, met à jour, désinstalle proprement les paquets et **résout les dépendances** automatiquement à partir de dépôts (sources définies dans `/etc/apt/sources.list`).
+
+**Problèmes résolus:**
+
+- **Résolution en cascade des dépendances**: installer `nginx` peut entraîner l'installation d'une vingtaine de paquets (libssl, libpcre, etc.); le gestionnaire fait ce travail.
+- **Conflits de versions**: il refuse une installation incohérente plutôt que de casser le système silencieusement.
+- **Mises à jour de sécurité**: une seule commande (`apt update && apt upgrade`) tient le système à jour.
+- **Désinstallation propre**: les fichiers sont retracés et retirés sans laisser de débris.
+- **Authenticité**: les dépôts sont signés, ce qui évite d'installer du code venant de n'importe où.
+
+**Exemple web:** déployer une application Node + Postgres + Nginx en frontal. Avec `apt install nginx postgresql nodejs`, le gestionnaire installe les trois services *et* leurs dépendances système, configure les démons et les met à disposition. Sans gestionnaire, il faudrait télécharger chaque binaire, vérifier sa signature, identifier les bibliothèques manquantes, recommencer si une mise à jour casse une compatibilité — un travail manuel coûteux et source d'erreurs.
+
+</details>
+
+---
+
+### Q4. Utilisateurs, groupes et permissions.
+Tu dois déployer un site web dans `/var/www/monsite`. Trois développeurs doivent pouvoir y déposer et modifier des fichiers. Le serveur Nginx (utilisateur `www-data`) doit pouvoir les **servir** mais pas les modifier. Personne d'autre ne doit pouvoir lire ces fichiers. Décris le modèle utilisateurs/groupes/permissions que tu mettrais en place et justifie tes choix.
+
+<details>
+<summary>Éléments de réponse</summary>
+
+**Acteurs:**
+
+- 3 utilisateurs humains: `alice`, `bob`, `carol`
+- 1 utilisateur de service: `www-data` (créé par l'installation de Nginx)
+
+**Groupe:**
+
+- Créer un groupe `web-monsite`
+- Membres: `alice`, `bob`, `carol`, et `www-data`
+
+**Propriétaire et groupe du dossier `/var/www/monsite`:**
+
+- Propriétaire: l'un des devs ou un compte de déploiement; peu importe ici
+- Groupe: `web-monsite`
+
+**Permissions:**
+
+- Sur le dossier: `2770` → `rwxrwx---` + setgid
+  - `rwx` pour le propriétaire et le groupe → les devs peuvent lire/écrire/traverser
+  - `---` pour les autres → confidentialité
+  - **`2` (setgid)**: les fichiers et sous-dossiers nouvellement créés héritent du **groupe** du dossier, donc `web-monsite`. C'est essentiel: sans setgid, un fichier déposé par `alice` appartiendrait au groupe primaire d'`alice`, et `www-data` ne pourrait plus le lire.
+- Sur les fichiers: `0640` → `rw-r-----`
+  - lecture/écriture pour le propriétaire (le dev qui a créé)
+  - lecture pour le groupe (les autres devs et `www-data` peuvent lire)
+  - rien pour les autres
+
+**Discussion:**
+
+- `www-data` ne doit avoir que `r` (jamais `w`) pour respecter le principe du moindre privilège: si Nginx était compromis, l'attaquant ne pourrait pas modifier le site.
+- Variante: si `www-data` ne doit **pas** être dans le groupe `web-monsite` (parce qu'il sert d'autres sites avec d'autres groupes), on utiliserait des **ACL** pour donner un accès en lecture sans toucher au groupe principal — mais cette technique sort du périmètre du cours.
+
+</details>
+
+## Section 3 — Commandes
+
+### A. Correction de commandes
+
+Chaque sous-question décrit une intention, puis une commande qui contient une erreur **sémantique** (la syntaxe est valide mais le résultat ne correspond pas à l'intention). Identifie le problème et propose la commande corrigée.
+
+---
+
+**Q1.** Tu veux changer le propriétaire du dossier `/var/www/monsite` **et de tout son contenu** pour `www-data`. Tu écris:
+
+```bash
+sudo chown www-data /var/www/monsite
+```
+
+<details>
+<summary>Correction</summary>
+
+**Problème:** sans `-R`, `chown` change uniquement le propriétaire du dossier lui-même, pas de ses fichiers ni de ses sous-dossiers.
+
+**Commande corrigée:**
+
+```bash
+sudo chown -R www-data /var/www/monsite
+```
+
+</details>
+
+---
+
+**Q2.** Tu veux que tout le monde puisse **lire** les fichiers du site dans `/var/www/monsite`, mais que seul le propriétaire puisse les modifier. Tu écris:
+
+```bash
+sudo chmod -R 644 /var/www/monsite
+```
+
+<details>
+<summary>Correction</summary>
+
+**Problème:** `644` retire le `x` aussi sur les **dossiers**. Or, sans `x` sur un dossier, on ne peut plus le **traverser**: Nginx ne peut plus accéder aux fichiers en dessous, même s'il a `r`. Le site est cassé.
+
+**Commande corrigée**: appliquer des permissions différentes selon le type:
+
+```bash
+sudo find /var/www/monsite -type d -exec chmod 755 {} \;
+sudo find /var/www/monsite -type f -exec chmod 644 {} \;
+```
+
+(Variante équivalente avec la syntaxe symbolique `chmod -R u=rwX,g=rX,o=rX` qui utilise le `X` majuscule — applique `x` uniquement aux dossiers et fichiers déjà exécutables.)
+
+</details>
+
+---
+
+**Q3.** Tu veux **ajouter** l'utilisateur `alice` au groupe `web-devs`, en plus de ses groupes existants. Tu écris:
+
+```bash
+sudo usermod -G web-devs alice
+```
+
+<details>
+<summary>Correction</summary>
+
+**Problème:** sans `-a`, l'option `-G` **remplace** la liste des groupes secondaires. Alice perdrait tous ses autres groupes secondaires (ex: `sudo`, `docker`, etc.) — typiquement un incident de production silencieux qu'on ne remarque qu'à la prochaine commande qui échoue.
+
+**Commande corrigée:**
+
+```bash
+sudo usermod -aG web-devs alice
+```
+
+(`-a` = *append*. Toujours utiliser `-aG` ensemble.)
+
+</details>
+
+---
+
+**Q4.** Tu veux **écraser** le contenu de `acces.log` avec la sortie de `apt list --installed`. Tu écris:
+
+```bash
+apt list --installed >> acces.log
+```
+
+<details>
+<summary>Correction</summary>
+
+**Problème:** `>>` **ajoute** à la fin du fichier au lieu de l'écraser. Si `acces.log` existe déjà, la commande ne fait pas ce qui est attendu — elle empile.
+
+**Commande corrigée:**
+
+```bash
+apt list --installed > acces.log
+```
+
+</details>
+
+---
+
+**Q5.** Tu veux donner au groupe `web-devs` la permission de **lire, écrire et traverser** le dossier `/var/www/monsite`, sans toucher aux permissions du propriétaire ni des autres. Tu écris:
+
+```bash
+sudo chmod 770 /var/www/monsite
+```
+
+<details>
+<summary>Correction</summary>
+
+**Problème:** la commande met à `770` toutes les permissions, donc elle **réécrit** aussi celles du propriétaire (qui se retrouvent à `rwx` — peut-être correct ici par hasard) et celles des autres (qui passent à `---`). Ce n'est pas ce qu'on a demandé: « sans toucher aux permissions du propriétaire ni des autres ».
+
+**Commande corrigée** — utiliser la syntaxe **symbolique** qui modifie uniquement le bit ciblé:
+
+```bash
+sudo chmod g=rwx /var/www/monsite
+```
+
+(Ou `g+rwx` si on veut seulement *ajouter* sans toucher à ce qui est déjà là.)
+
+</details>
+
+### B. Écriture de commandes
+
+Pour chaque scénario, écris la commande qui réalise exactement ce qui est demandé.
+
+---
+
+**Q1.** Crée le groupe `testeurs` (sans utilisateur dedans pour l'instant).
+
+<details>
+<summary>Réponse</summary>
+
+```bash
+sudo groupadd testeurs
+```
+
+</details>
+
+---
+
+**Q2.** Change le **groupe propriétaire** de tous les fichiers et sous-dossiers de `/srv/recettes` pour le groupe `testeurs`.
+
+<details>
+<summary>Réponse</summary>
+
+```bash
+sudo chgrp -R testeurs /srv/recettes
+```
+
+</details>
+
+---
+
+**Q3.** Installe le paquet `git` ainsi que ses dépendances, **sans demander de confirmation** à l'utilisateur.
+
+<details>
+<summary>Réponse</summary>
+
+```bash
+sudo apt install -y git
+```
+
+</details>
+
+---
+
+
+**Q4.** Applique récursivement les permissions `750` sur le dossier `/srv/app`.
+
+<details>
+<summary>Réponse</summary>
+
+```bash
+sudo chmod -R 750 /srv/app
+```
+
+</details>
+
+
+## Section 4 — Exercice de synthèse
+
+<Aside type="note">
+Cet exercice évalue ta capacité à **appliquer** le modèle de permissions à un cas concret. L'arborescence te est donnée; tu dois remplir les permissions et justifier chaque choix.
+</Aside>
+
+### Scénario
+
+Tu es chargé·e de mettre en place les permissions du serveur de production pour un projet web. L'équipe est composée de:
+
+- **3 développeurs** (Alice, Bob, Carol)
+- **1 administrateur système** (Frank)
+- **1 testeuse / QA** (Gina)
+
+Le site est servi par Nginx (utilisateur `www-data`). Les développeurs déposent eux-mêmes les fichiers sur le serveur via SSH. Le site permet aux visiteurs de **téléverser des fichiers** (images, documents) qui sont stockés sur le serveur par Nginx.
+
+### Livrable demandé
+
+Ton plan doit comporter exactement **trois sections**, dans l'ordre suivant.
+
+#### Section 1 : Modèle utilisateurs et groupes (tableau)
+
+Présente un **tableau** avec les colonnes:
+
+1. Nom du compte ou du groupe
+2. Type: utilisateur humain / utilisateur de service / groupe
+3. Membres (pour un groupe) **ou** rôle (pour un utilisateur)
+4. Brève justification (1 phrase)
+
+Inclure les comptes humains, le compte de service `www-data`, et **au moins un groupe** que tu juges nécessaire.
+
+#### Section 2 : Permissions du serveur de production (tableau à compléter)
+
+L'arborescence du serveur de production est **fournie ci-dessous**:
+
+```
+/var/www/monsite/
+├── public/        ← fichiers HTML, CSS, JS, images servis par Nginx
+├── config/        ← fichiers sensibles (.htpasswd, clés API)
+└── uploads/       ← fichiers téléversés par les visiteurs, écrits par Nginx
+```
+
+Pour **chaque dossier**, complète le tableau suivant:
+
+| Dossier | Propriétaire | Groupe | Permissions octales | Justification (1 phrase) |
+|---|---|---|---|---|
+| `/var/www/monsite/` | ? | ? | ? | ? |
+| `/var/www/monsite/public/` | ? | ? | ? | ? |
+| `/var/www/monsite/config/` | ? | ? | ? | ? |
+| `/var/www/monsite/uploads/` | ? | ? | ? | ? |
+
+Indique également **où tu utilises le bit setgid** (notation `2xxx`) et explique pourquoi.
+
+#### Section 3 : Politique sudo et gestion des paquets (liste à puces)
+
+Une liste à puces qui répond à chacun des points suivants:
+
+- Qui détient les privilèges `sudo`, et pour quelles commandes?
+- Qui peut installer des paquets **système**, et lesquels?
+- Comment les développeurs gèrent-ils leurs **dépendances applicatives** (ex: npm, pip) sans toucher au système?
+- Comment ton plan respecte-t-il le **principe du moindre privilège**?
+
+{/* <details>
+<summary>Corrigé indicatif</summary>
+
+Plusieurs réponses sont valides. Voici **un exemple** de plan qui satisfait les critères. D'autres choix de permissions peuvent être tout aussi corrects, à condition d'être cohérents et justifiés.
+
+**Section 1 — Modèle utilisateurs et groupes**
+
+| Nom | Type | Membres / Rôle | Justification |
+|---|---|---|---|
+| `alice`, `bob`, `carol` | Utilisateurs humains | Développeurs | Comptes nominatifs pour la traçabilité |
+| `frank` | Utilisateur humain | Sysadmin | Seul détenteur de sudo complet |
+| `gina` | Utilisateur humain | Testeuse (QA) | Vérifie le rendu via l'URL publique; pas d'accès direct au serveur |
+| `www-data` | Utilisateur de service | Exécution de Nginx | Créé par le paquet, principe du moindre privilège |
+| `web-devs` | Groupe | alice, bob, carol | Accès en écriture aux fichiers du site |
+
+**Section 2 — Permissions du serveur de production**
+
+| Dossier | Propriétaire | Groupe | Octal | Justification |
+|---|---|---|---|---|
+| `/var/www/monsite/` | `root` | `root` | `0755` | Racine du déploiement; modification réservée au sysadmin, traversée pour tous |
+| `/var/www/monsite/public/` | `root` | `web-devs` | `2775` | Devs écrivent (groupe); www-data lit/traverse (autres). Setgid pour héritage. |
+| `/var/www/monsite/config/` | `root` | `web-devs` | `2770` | Secrets; devs accèdent, www-data exclu via `o=---` |
+| `/var/www/monsite/uploads/` | `www-data` | `web-devs` | `2770` | www-data écrit (propriétaire); devs lisent/nettoient (groupe) |
+
+**Sur le bit setgid:** présent (`2xxx`) sur les trois sous-dossiers, pas sur la racine. Il garantit que tout fichier nouvellement créé hérite du groupe `web-devs` (ou du groupe propriétaire du dossier) au lieu du groupe primaire de l'utilisateur qui crée le fichier. Sans setgid, un fichier déposé par `alice` dans `public/` aurait pour groupe `alice` au lieu de `web-devs`, et la cohérence du modèle s'effondrerait dès le premier déploiement.
+
+**Note sur `uploads/`:** le propriétaire est `www-data` parce que c'est lui qui doit pouvoir écrire (les visiteurs téléversent via le site). Les devs y ont aussi accès via le groupe pour pouvoir nettoyer ou modérer. Permission `o=---` parce que les fichiers téléversés peuvent contenir des données privées.
+
+**Note sur `config/`:** `o=---` (pas `o=r-x`) parce que `www-data` n'a aucune raison de lire ce dossier — ses secrets éventuels (ex: `.htpasswd`) sont chargés au démarrage de Nginx (en tant que root), pas à l'exécution.
+
+**Section 3 — Politique sudo et gestion des paquets**
+
+- **Sudo complet:** uniquement Frank (sysadmin). Audit via `/var/log/auth.log`.
+- **Sudo restreint:** les développeurs n'ont **pas** sudo en production. Sur leur machine de dev local, c'est leur choix.
+- **Installation de paquets système** (`apt`): uniquement Frank, après revue (paquet, version, justification documentée).
+- **Dépendances applicatives:** gérées par les devs via `npm` (Node) ou `pip` dans un `venv`, **dans le projet**, jamais en `apt install` global. Cela découple le cycle de vie applicatif du cycle de vie système.
+- **Moindre privilège:** Nginx tourne sous `www-data` (jamais root) avec uniquement la lecture sur `public/` et l'écriture sur `uploads/`. Aucun accès à `config/`. Les développeurs n'ont pas sudo, donc même un compte compromis ne peut pas escalader les privilèges sur le serveur.
+
+</details> */}
