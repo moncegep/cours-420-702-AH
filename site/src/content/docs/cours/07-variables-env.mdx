@@ -1,0 +1,284 @@
+---
+title: Variables d'environnement
+description: Configurer le shell avec les variables d'environnement.
+---
+
+import { Aside, Steps, Tabs, TabItem, Card, CardGrid } from '@astrojs/starlight/components';
+
+
+Quand tu ouvres un terminal, ton shell ne part pas d'une page blanche. 
+Il dispose d'un ensemble de **variables d'environnement**. 
+Ce sont des paires `<CLÉ>=<valeur>` qui configurent le comportement du shell et
+celui des programmes qu'il lance. 
+
+<Aside type="note" title="Terminal vs shell">
+Le **terminal** (ou émulateur de terminal) est la fenêtre graphique dans laquelle tu tapes tes commandes. 
+C'est l'interface visuelle (exemples : GNOME Terminal, Windows Terminal, iTerm2). 
+
+Le **shell** est le programme qui **interprète** tes commandes à l'intérieur de cette fenêtre. 
+C'est le moteur (exemples : bash, zsh, PowerShell). Un même terminal peut lancer différents shells. 
+
+Sur Windows, l'invite de commandes (`cmd`) utilise un shell très différent de bash; **PowerShell** s'en rapproche davantage, mais avec sa propre syntaxe.
+</Aside>
+
+## Consulter les variables
+
+```bash
+echo $HOME          # /home/lelafontant — ton répertoire personnel
+echo $USER          # lelafontant — ton nom d'utilisateur
+echo $SHELL         # /bin/bash — ton shell actif
+echo $LANG          # en_US.UTF-8 — ta langue et ton encodage
+env                 # Affiche toutes les variables d'environnement
+printenv PATH       # Affiche la valeur d'une variable spécifique
+```
+
+<Aside type="note" title="Convention de nommage">
+Par convention, les variables d'environnement sont en **MAJUSCULES** (`PATH`, `HOME`, `LANG`). 
+Les variables locales de script utilisent souvent des minuscules ou du *snake_case* (`mon_fichier`, `compteur`). 
+</Aside>
+
+## Les variables prédéfinies
+ 
+Avant même que tu tapes quoi que ce soit, le shell dispose déjà de dizaines de variables configurées par le système. 
+
+### Quelques variables importantes
+ 
+| Variable | Exemple de valeur | Rôle |
+|---|---|---|
+| `PATH` | `/usr/local/bin:/usr/bin:/bin` | Répertoires où le shell cherche les commandes |
+| `HOME` | `/home/lelafontant` | Répertoire personnel de l'utilisateur |
+| `USER` | `lelafontant` | Nom de l'utilisateur courant |
+| `SHELL` | `/bin/bash` | Shell par défaut de l'utilisateur |
+| `PWD` | `/home/lelafontant/projet` | Répertoire de travail actuel |
+| `LANG` | `en_US.UTF-8` | Langue et encodage du système |
+| `HOSTNAME` | `lelafontant-VMware-Virtual-Platform` | Nom de la machine |
+ 
+```bash
+echo $HOME          # /home/lelafontant
+echo $USER          # lelafontant
+env                 # Affiche TOUTES les variables d'environnement
+printenv PATH       # Affiche la valeur d'une variable spécifique
+```
+ 
+<Aside type="tip" title="Équivalent Windows">
+Windows possède aussi des variables d'environnement, avec des noms différents : 
+`%USERPROFILE%` au lieu de `$HOME`, `%USERNAME%` au lieu de `$USER`, `%PATH%` 
+(même nom, mais les répertoires sont séparés par `;` au lieu de `:`). 
+Tu peux les voir avec la commande `set` dans `cmd` ou `Get-ChildItem Env:` dans PowerShell.
+</Aside>
+
+## Créer et exporter des variables
+
+Par défaut, une variable définie dans le shell est **locale**. 
+Elle n'existe que dans la session courante et n'est **pas transmise aux programmes que tu lances** depuis ce shell.
+
+```bash
+MA_COULEUR="bleu"
+echo $MA_COULEUR            # bleu
+bash -c 'echo $MA_COULEUR'  # (rien) — le sous-shell ne la voit pas
+```
+
+La commande `export` rend la variable **disponible** pour tout programme lancé **depuis ce shell**. 
+Sans `export`, la variable reste confinée.
+
+```bash "export"
+export MA_COULEUR="bleu"
+bash -c 'echo $MA_COULEUR'  # bleu — le sous-shell en hérite
+```
+
+<Aside type="caution" title="Portée limitée">
+Exporter une variable ne la rend **pas globale** sur tout le système. 
+Elle est transmise uniquement aux **processus enfants** du shell courant. 
+Si tu ouvres un autre terminal, cette variable n'existera pas.
+</Aside>
+
+### Que se passe-t-il en cas de conflit de noms?
+ 
+Si tu crées une variable qui porte le même nom qu'une variable prédéfinie, **ta valeur écrase l'ancienne** sans avertissement :
+ 
+```bash
+echo $USER          # lelafontant
+export USER="intrus"
+echo $USER          # intrus — la valeur originale est perdue dans cette session
+```
+ 
+Le shell ne fait aucune distinction entre « variable système » et « variable personnelle » — c'est le même mécanisme. 
+C'est pourquoi la convention de nommage est si importante : en utilisant des **MAJUSCULES** pour les variables système 
+et des noms **spécifiques à ton projet** pour les tiennes (par exemple `APP_PORT` plutôt que `PORT`), tu réduis le risque de collision.
+ 
+<Aside type="tip" title="Bonne pratique en développement web">
+Les projets bien structurés **préfixent** leurs variables d'environnement avec 
+le nom du projet ou de l'application (ex: *MYAPP*) : `MYAPP_PORT`, `MYAPP_DB_HOST`, `MYAPP_SECRET_KEY`. 
+Ça évite les conflits quand plusieurs applications cohabitent sur le même serveur — un problème fréquent en production.
+</Aside>
+
+
+## Modifier les variables
+ 
+Tu seras parfois amené à modifier la valeur de certaines variables, même celle prédéfinie. 
+Par exemple, tu modifieras souvent `PATH` pour ajouter des répertoires de commandes. 
+Tu peux aussi changer `EDITOR` pour définir ton éditeur préféré, ou `LANG` pour changer la langue des messages d'erreur.
+
+En faisant simplement un nouvel `export` ciblant la variable, tu modifies sa valeur:
+ 
+```bash
+export EDITOR="vim"               # Changer l'éditeur par défaut
+export LANG="en_US.UTF-8"         # Passer les messages en anglais
+export PATH="$PATH:/mon/dossier"  # Ajouter un répertoire au PATH
+```
+ 
+<Aside type="caution" title="Certaines variables prédéfinies sont gérées automatiquement">
+Certaines variables prédéfinies comme `PWD` et `OLDPWD` sont gérées automatiquement par le shell (elles changent quand tu navigues avec `cd`). 
+Tu *pourrais* les écraser manuellement, mais ça n'aurait pas de sens — le shell les recalcule de toute façon.
+</Aside>
+ 
+<Aside type="caution" title="Modifier n'est pas détruire">
+Écraser une variable système avec une mauvaise valeur peut rendre ta session inutilisable. 
+Par exemple, `export PATH=""` vide le PATH et le shell ne trouvera plus aucune commande — même pas `ls`.  
+Si ça arrive, ferme le terminal et ouvre-en un nouveau : les fichiers de configuration restaureront les valeurs par défaut.
+</Aside>
+
+## Supprimer une variable
+ 
+Pour supprimer une variable, même prédéfinie, on utilise la commande `unset` :
+ 
+```bash
+unset EDITOR        # Supprime la variable EDITOR
+echo $EDITOR        # (rien)
+```
+ 
+La variable disparaît **de la session courante** et n'est plus transmise aux processus enfants. 
+
+<Aside type='danger' title='Supprimer certaines variables peut avoir des effets importants'>
+Si tu fais `unset PATH`, le shell ne trouvera plus aucune commande. 
+Si tu fais `unset HOME`, des programmes qui dépendent du répertoire personnel pourraient mal fonctionner.
+ 
+En pratique, `unset` est surtout utile pour **nettoyer** des variables temporaires dans un script, 
+ou pour s'assurer qu'une variable n'interfère pas avec le comportement d'un programme. 
+Au prochain login ou dans un nouveau terminal, les variables prédéfinies seront restaurées par 
+les fichiers de configuration.
+</Aside>
+
+
+## La variable PATH
+
+`PATH` est la variable d'environnement la plus importante pour le fonctionnement quotidien du terminal.  
+Elle contient une **liste de répertoires**, séparés par `:`, dans lesquels le shell cherche les commandes que tu tapes.
+
+```bash
+echo $PATH
+# /usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin
+```
+
+### Ajouter un répertoire
+
+Pour ajouter un répertoire au `PATH` :
+
+```bash
+export PATH="$PATH:/home/lelafontant/mes-scripts"
+```
+
+Cette syntaxe **ajoute** ton répertoire à la fin du `PATH` existant. 
+Si tu le mettais au début (`export PATH="/home/lelafontant/mes-scripts:$PATH"`), 
+tes commandes personnelles seraient trouvées **avant** les commandes système — utile mais potentiellement risqué.
+
+<Aside type="tip" title="Pertinence web">
+Quand tu installes Node.js, npm ou d'autres outils de développement, 
+leur installateur ajoute souvent un répertoire au `PATH`. 
+Si une commande comme `node` ou `npm` n'est pas trouvée après installation, 
+c'est généralement un problème de `PATH`. La commande `which node` ou `type node` te permet de diagnostiquer.
+</Aside>
+
+### Localiser et inspecter les commandes
+
+Quand tu tapes `ls`, le shell ne cherche pas dans tout le disque. 
+Il parcourt les répertoires listés dans `PATH`, **dans l'ordre**, et exécute le premier fichier `ls` qu'il trouve.
+
+```bash
+which ls            # /usr/bin/ls — montre OÙ le shell a trouvé la commande
+which node          # /usr/local/bin/node
+```
+
+#### Commande `which`
+
+La commande `which` trouve le chemin de l'exécutable que le shell utiliserait.
+
+```bash
+which python3         # /usr/bin/python3
+which code            # /usr/bin/code
+```
+
+<Aside type="tip" title="Réflexe de diagnostic">
+Quand tu tapes une commande et que le terminal répond `command not found`, 
+tu peux utiliser `which macommande` pour vérifier si elle est dans le `PATH`, 
+puis `echo $PATH` pour inspecter les répertoires cherchés.
+</Aside>
+ 
+#### Commande `type`
+
+La commande `type` est plus complet. Elle distingue les commandes internes, alias et fichiers.
+
+```bash
+type cd               # cd is a shell builtin — commande intégrée au shell
+type ls               # ls is aliased to 'ls --color=auto' — alias
+type node             # node is /usr/local/bin/node — fichier exécutable
+```
+
+La différence entre `which` et `type` est subtile mais importante:
+- `which` ne connaît que les fichiers exécutables dans le `PATH`. 
+- `type` connaît *tout* ce que le shell sait exécuter : les commandes internes (`cd`, `echo`, `export`), les alias, les fonctions, et les fichiers. 
+
+#### Commande `whereis`
+
+La commande `whereis` trouve l'exécutable, le code source ET les pages de manuel
+
+```bash
+whereis nginx         # nginx: /usr/sbin/nginx /etc/nginx /usr/share/man/man8/nginx.8.gz
+```
+
+## Persistance : .bashrc et .profile
+
+Les variables définies avec `export` dans le terminal **disparaissent** quand tu fermes la session. Pour qu'elles soient disponibles à chaque connexion, tu dois les placer dans un fichier de configuration du shell.
+
+| Fichier | Quand il est lu | Usage typique |
+|---|---|---|
+| `~/.profile` | À la **connexion** (login shell) | Variables d'environnement globales (`PATH`, `EDITOR`) |
+| `~/.bashrc` | À chaque **ouverture de terminal** (interactive shell) | Alias, fonctions, personnalisation du prompt |
+
+```bash
+# Ajouter Node.js au PATH de façon permanente
+echo 'export PATH="$PATH:/home/lelafontant/.npm-global/bin"' >> ~/.bashrc
+
+# Recharger sans fermer le terminal
+source ~/.bashrc
+```
+
+<Aside type="note" title="source vs exécution">
+`source ~/.bashrc` (ou son raccourci `. ~/.bashrc`) exécute le fichier **dans le shell courant**. Si tu lançais `bash ~/.bashrc` à la place, il s'exécuterait dans un sous-shell et les modifications ne s'appliqueraient pas à ta session.
+</Aside>
+
+## Configuration par variables d'environnement
+
+En développement web, les variables d'environnement jouent un rôle central dans la **configuration des applications**. Plutôt que de coder en dur l'adresse de la base de données ou le port du serveur, on les lit depuis l'environnement.
+
+```bash
+# Lancer un serveur Node.js sur un port personnalisé
+export PORT=3000
+export DB_HOST="localhost"
+export NODE_ENV="development"
+node server.js
+```
+
+```javascript
+// server.js — lecture des variables en Node.js
+const port = process.env.PORT || 8080;
+const dbHost = process.env.DB_HOST || 'localhost';
+const isProd = process.env.NODE_ENV === 'production';
+```
+
+Ceci permet d'exécuter correctement le même code dans plusieurs environnements, mais également de le personnaliser en modifiant les variables environnementales.  
+Cela évite également de rendre public (dans un dépot Github par exemple) des informations sensibles ou privées comme les clés API et les mots de passe.
+
+<Aside type="caution" title="Fichiers .env">
+En pratique, on utilise souvent un fichier `.env` à la racine du projet pour regrouper les variables. Des outils comme `dotenv` (Node.js) chargent ce fichier automatiquement.
+</Aside>

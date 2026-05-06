@@ -1,0 +1,274 @@
+---
+title: Scripts bash
+description: Automatiser avec des scripts bash.
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+## Scripts bash
+
+Tu sais maintenant configurer l'environnement (variables), observer l'exécution (processus) et contrôler les tâches (jobs). L'étape suivante est naturelle : **automatiser** ces opérations en les combinant dans un script.
+
+Un script bash est un fichier texte contenant une séquence de commandes. Au lieu de les taper une par une, tu les exécutes toutes d'un coup. C'est la base de l'automatisation en administration système — et en déploiement web.
+
+### Créer et exécuter un script
+
+<Steps>
+
+1. **Crée le fichier** avec un éditeur de texte :
+
+   ```bash
+   nano mon-script.sh
+   ```
+
+2. **Ajoute le shebang** en première ligne — il indique au système quel interpréteur utiliser :
+
+   ```bash
+   #!/bin/bash
+   echo "Bonjour depuis mon script!"
+   ```
+
+3. **Rends le script exécutable** — c'est ici que les permissions reviennent :
+
+   ```bash
+   chmod +x mon-script.sh
+   ```
+
+4. **Exécute-le** :
+
+   ```bash
+   ./mon-script.sh
+   # Bonjour depuis mon script!
+   ```
+
+</Steps>
+
+<Aside type="note" title="Pourquoi ./  ?">
+Le répertoire courant (`.`) n'est généralement pas dans le `PATH` pour des raisons de sécurité. Sans `./`, le shell chercherait `mon-script.sh` dans les répertoires du `PATH` et ne le trouverait pas. Le préfixe `./` dit explicitement « exécute le fichier qui se trouve ici ».
+</Aside>
+
+### Variables dans un script
+
+Les variables de script fonctionnent comme dans le terminal. Quelques règles à retenir : pas d'espaces autour du `=`, et on utilise `$` pour lire la valeur.
+
+```bash
+#!/bin/bash
+
+# Définir des variables
+NOM="Henri"
+COURS="420-702-AH"
+DATE=$(date +%Y-%m-%d)    # Substitution de commande — exécute date et stocke le résultat
+
+echo "Bienvenue $NOM au cours $COURS"
+echo "Nous sommes le $DATE"
+```
+
+<Aside type="caution" title="Espaces interdits">
+`NOM="Henri"` est correct. `NOM = "Henri"` provoque une erreur — bash interprète `NOM` comme une commande et `=` comme un argument. C'est un piège classique.
+</Aside>
+
+### Arguments positionnels
+
+Un script peut recevoir des **arguments** depuis la ligne de commande :
+
+```bash
+#!/bin/bash
+# deployer.sh — Script qui prend un environnement en argument
+
+echo "Déploiement vers : $1"     # Premier argument
+echo "Branche : $2"              # Deuxième argument
+echo "Nombre d'arguments : $#"   # Nombre total d'arguments
+echo "Tous les arguments : $@"   # Liste de tous les arguments
+```
+
+```bash
+./deployer.sh production main
+# Déploiement vers : production
+# Branche : main
+# Nombre d'arguments : 2
+# Tous les arguments : production main
+```
+
+### Codes de retour
+
+Chaque commande retourne un **code de sortie** (*exit code*) — un nombre entre 0 et 255. Par convention, `0` signifie succès et toute autre valeur signifie une erreur.
+
+```bash
+ls /tmp
+echo $?     # 0 — succès
+
+ls /dossier-inexistant
+echo $?     # 2 — erreur (le dossier n'existe pas)
+```
+
+Dans un script, tu peux utiliser `exit` pour fixer explicitement le code de retour :
+
+```bash
+#!/bin/bash
+if [ ! -f "config.env" ]; then
+    echo "Erreur : fichier config.env introuvable"
+    exit 1
+fi
+echo "Configuration chargée"
+exit 0
+```
+
+<Aside type="tip" title="Pertinence web">
+Les codes de retour sont essentiels dans les pipelines CI/CD. Quand GitHub Actions ou GitLab CI exécute ton script de test ou de déploiement, il vérifie le code de retour : `0` → le pipeline continue, autre chose → le pipeline s'arrête et signale une erreur.
+</Aside>
+
+### Conditions
+
+Les structures conditionnelles permettent à ton script de prendre des décisions. Bash utilise `if` avec des commandes de test :
+
+```bash
+#!/bin/bash
+# verifier-serveur.sh — Vérifie si un processus tourne
+
+PROCESSUS="node"
+
+if pgrep -x "$PROCESSUS" > /dev/null; then
+    echo "$PROCESSUS tourne (PID : $(pgrep -x $PROCESSUS))"
+else
+    echo "$PROCESSUS ne tourne pas"
+fi
+```
+
+Les tests les plus courants avec `[[ ]]` :
+
+```bash
+# Tests sur les chaînes
+[[ "$VAR" == "valeur" ]]     # Égalité
+[[ -z "$VAR" ]]              # Chaîne vide
+[[ -n "$VAR" ]]              # Chaîne non vide
+
+# Tests sur les fichiers
+[[ -f "fichier.txt" ]]       # Le fichier existe
+[[ -d "dossier" ]]           # Le dossier existe
+[[ -x "script.sh" ]]        # Le fichier est exécutable
+
+# Tests numériques
+[[ "$COUNT" -gt 10 ]]        # Plus grand que
+[[ "$COUNT" -eq 0 ]]         # Égal à
+```
+
+### Boucles
+
+```bash
+#!/bin/bash
+# sauvegarder.sh — Sauvegarde plusieurs répertoires
+
+REPERTOIRES=("src" "config" "public")
+DATE=$(date +%Y%m%d)
+
+for REP in "${REPERTOIRES[@]}"; do
+    if [[ -d "$REP" ]]; then
+        tar -czf "backup-${REP}-${DATE}.tar.gz" "$REP"
+        echo "Sauvegardé : $REP"
+    else
+        echo "Ignoré : $REP (n'existe pas)"
+    fi
+done
+```
+
+```bash
+#!/bin/bash
+# attendre-serveur.sh — Attend qu'un serveur soit prêt
+
+MAX_TENTATIVES=30
+TENTATIVE=0
+
+while [[ $TENTATIVE -lt $MAX_TENTATIVES ]]; do
+    if curl -s http://localhost:3000 > /dev/null 2>&1; then
+        echo "Serveur prêt après $TENTATIVE tentatives"
+        exit 0
+    fi
+    TENTATIVE=$((TENTATIVE + 1))
+    echo "Tentative $TENTATIVE/$MAX_TENTATIVES..."
+    sleep 1
+done
+
+echo "Erreur : le serveur n'a pas démarré après $MAX_TENTATIVES secondes"
+exit 1
+```
+
+<Aside type="note" title="Arithmétique en bash">
+`$((expression))` est la syntaxe pour l'arithmétique en bash. `TENTATIVE=$((TENTATIVE + 1))` incrémente la variable. Tu peux aussi utiliser `((TENTATIVE++))` pour le même résultat.
+</Aside>
+
+### Script intégrateur : déploiement simplifié
+
+Ce script rassemble tous les concepts vus dans ce cours — variables d'environnement, vérification de processus, signaux, gestion de tâches et automatisation :
+
+```bash
+#!/bin/bash
+# deployer.sh — Script de déploiement simplifié
+# Usage : ./deployer.sh [production|staging]
+
+# --- Variables d'environnement ---
+ENVIRONNEMENT="${1:-staging}"       # Premier argument, "staging" par défaut
+APP_DIR="/var/www/monapp"
+LOG_FILE="/var/log/monapp/deploy.log"
+PORT="${PORT:-3000}"                # Lit la variable d'env PORT, ou 3000 par défaut
+
+echo "=== Déploiement vers $ENVIRONNEMENT ===" | tee -a "$LOG_FILE"
+echo "Date : $(date)" | tee -a "$LOG_FILE"
+
+# --- Étape 1 : Vérifier que le serveur tourne ---
+if pgrep -f "node server.js" > /dev/null; then
+    ANCIEN_PID=$(pgrep -f "node server.js")
+    echo "Serveur actif (PID $ANCIEN_PID) — arrêt gracieux..."
+
+    # Envoie SIGTERM (arrêt propre)
+    kill "$ANCIEN_PID"
+
+    # Attend que le processus se termine (max 10 secondes)
+    ATTENTE=0
+    while kill -0 "$ANCIEN_PID" 2>/dev/null && [[ $ATTENTE -lt 10 ]]; do
+        sleep 1
+        ATTENTE=$((ATTENTE + 1))
+    done
+
+    # Si le processus est toujours là, force l'arrêt
+    if kill -0 "$ANCIEN_PID" 2>/dev/null; then
+        echo "Arrêt forcé (SIGKILL)..."
+        kill -9 "$ANCIEN_PID"
+    fi
+    echo "Serveur arrêté." | tee -a "$LOG_FILE"
+else
+    echo "Aucun serveur en cours." | tee -a "$LOG_FILE"
+fi
+
+# --- Étape 2 : Mettre à jour le code ---
+cd "$APP_DIR" || exit 1
+git pull origin main
+npm install --production
+
+# --- Étape 3 : Configurer l'environnement ---
+if [[ "$ENVIRONNEMENT" == "production" ]]; then
+    export NODE_ENV="production"
+    export PORT=80
+else
+    export NODE_ENV="development"
+    export PORT="$PORT"
+fi
+
+# --- Étape 4 : Relancer le serveur ---
+nohup node server.js >> "$LOG_FILE" 2>&1 &
+NOUVEAU_PID=$!
+echo "Serveur relancé (PID $NOUVEAU_PID, port $PORT)" | tee -a "$LOG_FILE"
+
+# --- Étape 5 : Vérifier que tout fonctionne ---
+sleep 2
+if kill -0 "$NOUVEAU_PID" 2>/dev/null; then
+    echo "Déploiement réussi!" | tee -a "$LOG_FILE"
+    exit 0
+else
+    echo "ERREUR : le serveur a planté au démarrage" | tee -a "$LOG_FILE"
+    exit 1
+fi
+```
+
+<Aside type="tip" title="Lire ce script">
+Reprends chaque section du script et identifie les concepts vus dans ce cours : variables d'environnement (`PORT`, `NODE_ENV`), vérification de processus (`pgrep`), signaux (`kill`, `kill -9`), lancement en arrière-plan (`nohup ... &`), codes de retour (`exit 0`, `exit 1`), conditions (`if`), boucles (`while`), et arguments positionnels (`$1`). Ce script est un patron courant en déploiement web — les outils professionnels font la même chose, avec plus de vérifications.
+</Aside>

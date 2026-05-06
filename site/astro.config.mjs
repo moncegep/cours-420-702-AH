@@ -3,10 +3,12 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import react from '@astrojs/react';
 import yaml from '@modyfi/vite-plugin-yaml';
+import mermaid from 'astro-mermaid';
 
 // https://astro.build/config
 export default defineConfig({
 	integrations: [
+		mermaid(),
 		starlight({
 			title: "Système d'exploitation",
 			defaultLocale: "root",
@@ -29,6 +31,8 @@ export default defineConfig({
 						{ label: 'Virtualisation', slug: 'cours/04-virtualisation' },
 						{ label: 'Gestionnaire de paquets', slug: 'cours/05-paquets' },
 						{ label: 'Utilisateurs et permissions', slug: 'cours/06-utilisateurs-permissions' },
+						{ label: "Variables d'environnement", slug: 'cours/07-variables-env' },
+						{ label: "Programmes & processus", slug: 'cours/08-processus' },
 					]
 				},
 				{

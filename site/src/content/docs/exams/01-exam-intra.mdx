@@ -1,0 +1,340 @@
+---
+title: Examen intra
+description: Examen intra du cours 420-702-AH.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## Section 1 — QCM
+
+Une seule bonne réponse par question.
+
+---
+
+Une seule bonne réponse par question.
+ 
+---
+ 
+**Q1.** Pourquoi le système d'exploitation fournit-il des **abstractions** comme les fichiers, les processus et les sockets?
+ 
+- A. Pour que les programmes n'aient pas à parler directement au matériel et restent portables
+- B. Pour cacher des informations aux utilisateurs malveillants
+- C. Pour rendre les programmes plus rapides
+- D. Pour économiser de l'espace disque
+---
+ 
+**Q2.** Le système d'exploitation lui-même est:
+ 
+- A. Un composant matériel intégré directement au processeur
+- B. Une interface graphique pour lancer des applications
+- C. Un service distant accessible par Internet
+- D. Un programme chargé en mémoire
+---
+ 
+**Q3.** Lequel des éléments suivants ne fait **pas** partie des responsabilités d'un système d'exploitation comme Linux?
+ 
+- A. Compiler le code source des applications utilisateur
+- B. Allouer la mémoire aux processus
+- C. Gérer les permissions sur les fichiers
+- D. Ordonnancer l'exécution des processus sur le CPU
+---
+ 
+**Q4.** Lequel des énoncés suivants distingue correctement Linux de Windows?
+ 
+- A. Linux n'a pas d'interface en ligne de commande, contrairement à Windows
+- B. Linux est composé d'un noyau libre accompagné d'utilitaires GNU; Windows est un système intégré et propriétaire
+- C. Linux et Windows partagent le même noyau de base
+- D. Windows domine le marché des serveurs web; Linux ne s'utilise que sur ordinateurs personnels
+---
+ 
+**Q5.** Le caractère `~` dans un chemin désigne:
+ 
+- A. Le répertoire racine du système (`/`)
+- B. Le répertoire personnel de l'utilisateur courant
+- C. Le répertoire courant
+- D. Le répertoire parent du répertoire courant
+---
+ 
+**Q6.** Un chemin commençant par `/` est:
+ 
+- A. Un chemin relatif au répertoire courant
+- B. Un lien symbolique vers la racine
+- C. Un chemin absolu, à partir de la racine du système de fichier
+- D. Un chemin réseau vers une autre machine
+---
+ 
+**Q7.** Les répertoires personnels des utilisateurs (sauf root) sont par convention dans:
+ 
+- A. `/users`
+- B. `/var/users`
+- C. `/usr`
+- D. `/home`
+---
+ 
+**Q8.** Sous Linux, l'arborescence de fichiers:
+ 
+- A. Est limitée à 256 dossiers au total
+- B. Sépare les disques avec des lettres comme `C:` et `D:`, comme sous Windows
+- C. N'autorise que des chemins relatifs
+- D. Forme un arbre unique partant d'une seule racine `/`, peu importe le nombre de disques physiques
+---
+ 
+**Q9.** Pour qu'un fichier puisse être exécuté comme un programme sous Linux, il doit:
+ 
+- A. Avoir l'extension `.exe`
+- B. Avoir le bit d'exécution `x` activé pour l'utilisateur qui l'invoque
+- C. Être placé obligatoirement dans `/usr/bin`
+- D. Avoir une taille inférieure à 1 Mo
+---
+ 
+**Q10.** La commande `cat fichier1 fichier2 > fichier3`:
+ 
+- A. Crée fichier3 avec le contenu concaténé de fichier1 et fichier2
+- B. Affiche fichier1 et fichier2 à l'écran puis crée fichier3 vide
+- C. Crée fichier3 avec uniquement le contenu de fichier2
+- D. Échoue car cat ne peut prendre qu'un seul fichier en argument
+---
+ 
+**Q11.** Un lien symbolique **cassé** (*dangling*) résulte de:
+ 
+- A. Une corruption du système de fichier
+- B. La suppression ou le déplacement de la cible pointée
+- C. Un manque de permissions sur le lien
+- D. Un redémarrage du système
+---
+ 
+**Q12.** Un avantage des conteneurs **dans le développement web** est:
+ 
+- A. Une isolation matérielle équivalente à celle d'une VM
+- B. La possibilité d'exécuter Windows et Linux simultanément sur le même OS hôte
+- C. L'absence totale de configuration
+- D. La reproductibilité de l'environnement entre développement, test et production
+---
+ 
+**Q13.** Que fait la commande `apt update`?
+ 
+- A. Elle met à jour tous les paquets installés sur le système
+- B. Elle met à jour le système d'exploitation entier
+- C. Elle met à jour la **liste** des paquets disponibles depuis les dépôts
+- D. Elle recompile les paquets installés depuis leur code source
+---
+ 
+**Q14.** Les sources des dépôts apt sont configurées dans:
+ 
+- A. `/etc/apt/sources.list` (et les fichiers du dossier `/etc/apt/sources.list.d/`)
+- B. `/etc/passwd`
+- C. `/usr/share/apt/`
+- D. `/var/apt/sources`
+---
+ 
+**Q15.** Pour ajouter un utilisateur existant à un groupe secondaire **sans toucher à ses autres groupes**, la commande correcte est:
+ 
+- A. `usermod -G groupe utilisateur`
+- B. `usermod -aG groupe utilisateur`
+- C. `useradd groupe utilisateur`
+- D. `groupadd utilisateur groupe`
+---
+ 
+**Q16.** La commande `id` permet de:
+ 
+- A. Identifier le système d'exploitation et sa version
+- B. Donner un identifiant unique à un nouveau fichier
+- C. Lister tous les utilisateurs du système
+- D. Afficher l'UID, le GID et la liste des groupes de l'utilisateur courant
+---
+ 
+**Q17.** Les permissions octales `640` correspondent à:
+ 
+- A. `rw-r-----`
+- B. `rw-r--r--`
+- C. `rwxr-x---`
+- D. `r--r--r--`
+---
+ 
+**Q18.** Pour qu'un dossier soit **traversable mais pas listable** (on peut accéder à un fichier dont on connaît le nom, mais pas faire `ls`):
+ 
+- A. Les permissions doivent être `r-x` (lecture + exécution)
+- B. Les permissions doivent être `--x` (exécution seulement)
+- C. Les permissions doivent être `r--` (lecture seulement)
+- D. C'est impossible: lecture et traversée vont toujours ensemble
+---
+ 
+**Q19.** Le **bit setgid** (`2xxx`) appliqué à un répertoire fait que:
+ 
+- A. Les fichiers créés appartiennent automatiquement au propriétaire du dossier
+- B. Le dossier devient exécutable comme un programme
+- C. Les fichiers nouvellement créés héritent du **groupe** du dossier
+- D. Seul root peut entrer dans le dossier
+---
+ 
+**Q20.** Quelle commande change **uniquement** le groupe propriétaire d'un fichier?
+ 
+- A. `chgrp groupe fichier`
+- B. `chmod groupe fichier`
+- C. `chown utilisateur fichier`
+- D. `chuser fichier`
+
+
+## Section 2 — Mise en situation web
+
+### Contexte
+
+Tu es développeur dans une équipe web. Le serveur de développement contient l'arborescence suivante pour ton projet:
+
+```
+/github/projet-web/
+├── public/
+│   ├── index.html
+│   ├── apropos.html
+│   ├── style.css
+│   └── images/
+│       ├── logo.png
+│       └── banniere.jpg
+├── config/
+│   └── nginx.conf
+└── logs/
+    └── access.log
+```
+
+**Contexte utilisateur:**
+
+- Ton compte: `dev`, groupe primaire `dev`, groupe secondaire `web-team`
+- Le serveur Nginx tourne sous l'utilisateur `www-data`, qui est aussi membre de `web-team`
+- Tu n'as **pas** sudo, sauf indication contraire
+
+---
+
+### Tâche 1 — Navigation
+
+Tu te trouves dans `/home/dev`.
+
+**1.a)** Écris la commande pour aller dans le dossier `images/` du projet en utilisant un **chemin absolu**.
+
+**1.b)** Tu te trouves maintenant dans `/github/projet-web/public/images`. Écris la commande pour te rendre dans `/github/projet-web/config/` en utilisant un **chemin relatif**.
+
+---
+
+### Tâche 2 — Création de dossiers et de fichiers
+
+**2.a)** Tu veux créer un nouveau dossier `videos` à l'intérieur de `public/`. Tu te trouves dans `/home/dev`. Écris la commande, en utilisant un chemin absolu.
+
+**2.b)** Tu veux maintenant créer un fichier vide `intro.txt` dans le dossier `videos/`. Lesquelles des commandes suivantes accomplissent correctement cette tâche? Indique pour chacune si elle fonctionne et, sinon, pourquoi.
+
+- A. `touch /github/projet-web/public/videos/intro.txt`
+- B. `mkdir /github/projet-web/public/videos/intro.txt`
+- C. `cat > /github/projet-web/public/videos/intro.txt`
+- D. `nano /github/projet-web/public/videos/intro.txt`
+
+---
+
+### Tâche 3 — Renommer et déplacer
+
+**3.a)** Tu veux **renommer** le fichier `apropos.html` en `a-propos.html` (sans le déplacer). Tu te trouves dans `/srv/projet-web/public/`. Lesquelles des commandes suivantes fonctionnent?
+
+- A. `mv apropos.html a-propos.html`
+- B. `cp apropos.html a-propos.html`
+- C. `mv apropos.html ./a-propos.html`
+- D. `mv apropos.html ../public/a-propos.html`
+
+**3.b)** Écris la commande pour **déplacer** le fichier `logo.png` (situé dans `images/`) vers le dossier `/github/projet-web/` (un niveau au-dessus de `public/`). Tu peux te placer où tu veux, mais utilise des **chemins absolus**.
+
+---
+
+### Tâche 4 — Vérifier les permissions
+
+**4.a)** Écris la commande pour afficher les permissions, le propriétaire et le groupe de **tous les fichiers et sous-dossiers immédiatement contenus** dans `/github/projet-web/public/`.
+
+**4.b)** Tu vois la sortie suivante pour `index.html`:
+
+```
+-rw-r----- 1 dev web-team 2048 mai  3 14:22 index.html
+```
+
+`www-data` peut-il lire ce fichier? Justifie en une phrase.
+
+---
+
+### Tâche 5 — Changer les permissions
+
+**5.a)** Tu veux que **`www-data` puisse lire les fichiers de `public/` et traverser tous les sous-dossiers**, mais que personne hors de `web-team` ne puisse rien lire. Tu as exceptionnellement `sudo` pour cette tâche. Lesquelles des commandes suivantes contribuent correctement à cet objectif? Pour celles qui sont incorrectes, explique pourquoi.
+
+- A. `sudo chmod -R 644 /github/projet-web/public/`
+- B. `sudo find /github/projet-web/public/ -type d -exec chmod 750 {} \;` puis `sudo find /github/projet-web/public/ -type f -exec chmod 640 {} \;`
+- C. `sudo chmod -R u=rwX,g=rX,o= /github/projet-web/public/`
+- D. `sudo chmod -R 777 /github/projet-web/public/`
+
+**5.b)** Tu apprends qu'un nouveau fichier `nouveau.css` a été déposé dans `public/` mais appartient au mauvais groupe. Écris la commande pour changer **uniquement** son groupe propriétaire pour `web-team`. (Tu as `sudo`.)
+
+## Section 3 — Questions à développement
+
+---
+
+### Q1 — Faiblesses des systèmes d'exploitation grand public
+
+Les systèmes d'exploitation grand public (Windows, macOS, distributions Linux desktop) présentent, du point de vue des **utilisateurs finaux** (et non des développeurs ou des administrateurs), un certain nombre de faiblesses récurrentes.
+
+**Identifie et explique au moins deux faiblesses distinctes.**
+
+---
+
+### Q2 — Limites de la résolution automatique des dépendances
+
+Le gestionnaire de paquets `apt` résout automatiquement les dépendances entre paquets. Cette résolution est précieuse mais **n'est pas infaillible**.
+
+**Identifie au moins deux situations** où la résolution peut échouer, donner un résultat inattendu, ou ne pas garantir un état système sain.
+
+## Section 4 — Problème de synthèse
+ 
+<Aside type="note" title="Cadre">
+Cet exercice évalue ta capacité à concevoir une organisation de fichiers et un système de permissions cohérent pour un cas réel. Plusieurs réponses sont valides; ce qu'on évalue, c'est la **cohérence interne**, la **justification** de chaque choix, et le respect du principe du **moindre privilège**.
+</Aside>
+### Contexte: Studio Trame
+ 
+**Studio Trame** est une PME québécoise spécialisée en développement web. L'effectif:
+ 
+| Personne | Rôle |
+|---|---|
+| Marie, Olivier | Développeurs frontend |
+| Pascale, Quentin | Développeurs backend |
+| Renée, Samuel | Designers/intégrateurs |
+| Théo | Chef de projet (suit l'avancement, ne code pas) |
+| Ulysse | Administrateur système |
+| Vivienne | Stagiaire affectée à `projet-alpha` |
+| William | Stagiaire affecté à `projet-beta` |
+ 
+L'entreprise opère un serveur Linux unique qui héberge:
+ 
+- **Deux projets clients en cours**: `projet-alpha`, `projet-beta`
+- **Le site web public de Studio Trame** (servi par Nginx, utilisateur de service `www-data`)
+**Contraintes imposées par les contrats avec les clients (NDA):**
+ 
+- Le code et les données de chaque projet client sont **strictement confidentiels**: les développeurs assignés à un projet ne doivent pas pouvoir lire l'autre projet.
+- Les **designers** travaillent sur les deux projets (besoin d'écriture sur les assets).
+- Chaque **développeur** est assigné à un seul projet.
+- Les **stagiaires** n'accèdent qu'au seul projet auquel ils sont assignés.
+- Le **chef de projet** (Théo) doit pouvoir **lire** les deux projets pour faire le suivi, mais n'a pas besoin d'écrire.
+- Seul **Ulysse** détient `sudo`.
+**Affectations aux projets clients:**
+ 
+| Projet | Frontend | Backend | Designers | Stagiaire |
+|---|---|---|---|---|
+| alpha | Marie | Pascale | Renée, Samuel | Vivienne |
+| beta | Olivier | Quentin | Renée, Samuel | William |
+ 
+### Livrable demandé
+ 
+Ton plan doit comporter exactement **trois sections**, dans l'ordre suivant.
+ 
+#### Section 1 — Tableau utilisateurs et groupes
+ 
+Présente un **tableau** listant tous les comptes (humains et de service) et tous les groupes que tu crées, avec leurs membres et une justification d'une phrase par ligne.
+ 
+#### Section 2 — Arborescence et permissions
+ 
+Conçois l'arborescence complète à partir d'une racine de ton choix (ex: `/srv/trame/`). Présente-la sous forme **d'arbre annoté** (un dossier par ligne) avec, pour chaque dossier principal:
+ 
+- propriétaire,
+- groupe propriétaire,
+- permissions octales (incluant les bits spéciaux le cas échéant),
+- une phrase de justification.
+Indique explicitement où et pourquoi tu utilises le **bit setgid**.
