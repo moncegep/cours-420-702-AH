@@ -47,6 +47,10 @@ export default defineConfig({
 					],
 				},
 				{
+					label: 'Projet',
+					slug: 'projet'
+				},
+				{
 					label: 'Reference',
 					autogenerate: { directory: 'reference' },
 				},
