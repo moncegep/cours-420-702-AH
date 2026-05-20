@@ -1,0 +1,514 @@
+---
+title: "Recherche avec grep, find et variables d'environnement"
+description: "Exercices progressifs pour maîtriser la recherche dans les fichiers, le comptage et la configuration par variables d'environnement."
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+Tu viens d'être embauché comme admin système junior dans une entreprise qui opère une **boutique en ligne**. On te remet l'accès au serveur web avec ses logs, ses fichiers de configuration et ses scripts. Ton superviseur te demande d'analyser ce qui se passe sur le serveur.
+
+Pour commencer, entre dans le dossier du serveur :
+
+```bash
+cd serveur-web
+```
+
+Le serveur contient les dossiers suivants :
+
+```
+serveur-web/
+├── config/         ← configuration prod et dev
+├── logs/           ← journaux du serveur
+├── rapports/       ← rapports de trafic et d'incidents
+├── scripts/        ← scripts d'administration
+├── sauvegardes/    ← sauvegardes de la base de données
+└── README.txt
+```
+
+---
+
+## Partie 1 : Fouiller dans les logs avec `grep`
+
+`grep` cherche un mot ou un motif dans un fichier et affiche les lignes qui correspondent.
+
+### Exercice 1.1 Première recherche
+
+**Requête :** « Vérifie s'il y a eu des erreurs aujourd'hui. »   
+Cherche le mot `ERROR` dans le fichier de log des erreurs.
+
+```bash
+grep "ERROR" logs/erreurs.log
+```
+
+Lance la commande. Tu devrais voir les lignes qui contiennent des erreurs.
+
+### Exercice 1.2 Numéros de ligne
+
+Refais la même recherche, mais affiche aussi le **numéro de ligne** pour chaque résultat. Ça aide à localiser l'erreur dans le fichier.
+
+<details>
+<summary>Indice</summary>
+
+L'option `-n` ajoute le numéro de ligne devant chaque résultat.
+
+</details>
+
+<details>
+<summary>Solution</summary>
+
+```bash
+grep -n "ERROR" logs/erreurs.log
+```
+
+</details>
+
+### Exercice 1.3 Chercher les avertissements
+
+Cherche les lignes contenant `WARNING` dans le même fichier. Combien y en a-t-il?
+
+<details>
+<summary>Solution</summary>
+
+```bash
+grep "WARNING" logs/erreurs.log
+```
+
+Tu peux compter visuellement, ou utiliser `grep -c` :
+
+```bash
+grep -c "WARNING" logs/erreurs.log
+```
+
+</details>
+
+### Exercice 1.4 Chercher dans un autre fichier
+
+Ton superviseur veut savoir si quelqu'un a essayé d'accéder à la section `/admin`. Cherche le mot `admin` dans le log d'accès. La recherche doit être **insensible à la casse** (trouver `admin`, `Admin`, `ADMIN`).
+
+<details>
+<summary>Indice</summary>
+
+L'option `-i` rend la recherche insensible à la casse.
+
+</details>
+
+<details>
+<summary>Solution</summary>
+
+```bash
+grep -in "admin" logs/acces.log
+```
+
+</details>
+
+### Exercice 1.5 Chercher les erreurs 404
+
+Combien de requêtes ont reçu une réponse **404** (page introuvable) dans le log d'accès?
+
+
+<details>
+<summary>Solution</summary>
+
+```bash
+grep -c "404" logs/acces.log
+```
+
+</details>
+
+
+### Exercice 1.6 Chercher dans plusieurs fichiers
+
+Cherche le mot `timeout` dans **tous les fichiers** du dossier `logs/`, avec les numéros de ligne.
+
+<details>
+<summary>Indice</summary>
+
+L'option `-r` cherche récursivement dans un dossier. Tu peux aussi lister les fichiers avec `grep "motif" logs/*`.
+
+</details>
+
+<details>
+<summary>Solution</summary>
+
+```bash
+grep -rn "timeout" logs/
+```
+
+Ou plus simplement :
+
+```bash
+grep -n "timeout" logs/*
+```
+
+</details>
+
+### Exercice 1.7 Compter avec un pipe
+
+Combien de lignes au total contiennent le mot `TODO` dans **tout le serveur**?
+
+<details>
+<summary>Indice</summary>
+
+Le pipe (`|`) envoie la sortie d'une commande vers une autre. `wc -l` compte les lignes.
+
+```
+grep -r "TODO" . | wc -l
+```
+
+</details>
+
+<details>
+<summary>Solution</summary>
+
+```bash
+grep -r "TODO" . | wc -l
+```
+
+</details>
+
+---
+
+## Partie 2 Inventorier le serveur avec find et wc
+
+`find` cherche des **fichiers** par nom, type ou taille. `wc` compte les **lignes**, les mots ou les caractères. 
+Ensemble, ils te permettent de faire l'inventaire d'un serveur.
+
+### Exercice 2.1 Trouver des fichiers par extension
+
+Trouve tous les fichiers `.log` sur le serveur.
+
+```bash
+find . -name "*.log"
+```
+
+### Exercice 2.2 Trouver les scripts
+
+Trouve tous les fichiers `.sh` (les scripts bash).
+
+<details>
+<summary>Solution</summary>
+
+```bash
+find . -name "*.sh"
+```
+
+</details>
+
+### Exercice 2.3 Trouver les fichiers de configuration
+
+Trouve tous les fichiers `.env`.
+
+<details>
+<summary>Solution</summary>
+
+```bash
+find . -name "*.env"
+```
+
+</details>
+
+### Exercice 2.4 Lister les dossiers
+
+Trouve tous les **dossiers** (pas les fichiers) du serveur.
+
+<details>
+<summary>Indice</summary>
+
+`-type d` limite aux dossiers. `-type f` limiterait aux fichiers.
+
+</details>
+
+<details>
+<summary>Solution</summary>
+
+```bash
+find . -type d
+```
+
+</details>
+
+### Exercice 2.5 Compter les lignes d'un log
+
+Combien de lignes contient le fichier `logs/acces.log`? Chaque ligne correspond à une requête HTTP.
+
+```bash
+wc -l logs/acces.log
+```
+
+### Exercice 2.6 Compter les lignes de tous les logs
+
+Combien de lignes contiennent **tous les fichiers de logs combinés**?
+
+<details>
+<summary>Solution</summary>
+
+```bash
+wc -l logs/*
+```
+
+La dernière ligne affiche le total.
+
+</details>
+
+### Exercice 2.7 Stocker un résultat dans une variable
+
+Stocke le nombre de requêtes (lignes dans `acces.log`) dans une variable et affiche un message.
+
+<details>
+<summary>Indice</summary>
+
+`$(commande)` exécute la commande et retourne le résultat. Attention : `wc -l` affiche aussi le nom du fichier. Pour avoir seulement le nombre, utilise un pipe : `cat fichier | wc -l`.
+
+</details>
+
+<details>
+<summary>Solution</summary>
+
+```bash
+NB_REQUETES=$(cat logs/acces.log | wc -l)
+echo "Nombre de requêtes aujourd'hui : $NB_REQUETES"
+```
+
+</details>
+
+
+### Exercice 2.8 Inventaire complet
+
+Crée un inventaire du serveur qui affiche :
+- Le nombre de fichiers `.log`
+- Le nombre de fichiers `.sh`
+- Le nombre de fichiers `.env`
+- Le nombre de fichiers `.sql`
+- Le nombre total de lignes dans les logs
+
+<details>
+<summary>Solution</summary>
+
+```bash
+NB_LOGS=$(find . -name "*.log" | wc -l)
+NB_SCRIPTS=$(find . -name "*.sh" | wc -l)
+NB_CONFIG=$(find . -name "*.env" | wc -l)
+NB_SAUVEGARDES=$(find . -name "*.sql" | wc -l)
+LIGNES_LOGS=$(cat logs/*.log | wc -l)
+
+echo "=== Inventaire du serveur ==="
+echo "Logs         : $NB_LOGS fichiers ($LIGNES_LOGS lignes)"
+echo "Scripts      : $NB_SCRIPTS fichiers"
+echo "Configuration: $NB_CONFIG fichiers"
+echo "Sauvegardes  : $NB_SAUVEGARDES fichiers"
+```
+
+</details>
+
+---
+
+## Partie 3 Configurer le serveur avec des variables d'environnement
+
+Les variables d'environnement configurent le comportement du serveur. Le dossier `config/` contient deux fichiers : `serveur.env` (production) et `serveur-dev.env` (développement).
+
+### Exercice 3.1 Voir les variables existantes
+
+Affiche la valeur de quelques variables système de ta machine :
+
+```bash
+echo "Utilisateur : $USER"
+echo "Répertoire  : $HOME"
+echo "Shell       : $SHELL"
+```
+
+### Exercice 3.2 Créer une variable
+
+Crée une variable `MON_SERVEUR` avec la valeur `"boutique-test"` et affiche-la.
+
+<details>
+<summary>Rappel important</summary>
+
+Pas d'espaces autour du `=`. `MON_SERVEUR="valeur"` est correct. `MON_SERVEUR = "valeur"` provoque une erreur.
+
+</details>
+
+<details>
+<summary>Solution</summary>
+
+```bash
+MON_SERVEUR="boutique-test"
+echo "Serveur : $MON_SERVEUR"
+```
+
+</details>
+
+### Exercice 3.3 Valeur par défaut
+
+Affiche la valeur de `SERVEUR_PORT`. Si elle n'existe pas encore, affiche `8080` par défaut.
+
+<details>
+<summary>Indice</summary>
+
+`${VARIABLE:-defaut}` retourne la valeur de `VARIABLE` si elle est définie, sinon retourne `defaut`.
+
+</details>
+
+<details>
+<summary>Solution</summary>
+
+```bash
+echo "Port : ${SERVEUR_PORT:-8080}"
+```
+
+La variable n'existe pas encore, donc tu verras `8080`.
+
+</details>
+
+### Exercice 3.4 Charger la configuration de production
+
+Charge le fichier `config/serveur.env` et affiche les valeurs.
+
+<Steps>
+
+1. Regarde ce que le fichier contient :
+
+   ```bash
+   cat config/serveur.env
+   ```
+
+2. Charge les variables dans ton shell :
+
+   ```bash
+   source config/serveur.env
+   ```
+
+3. Vérifie que ça a fonctionné :
+
+   ```bash
+   echo "Nom  : $SERVEUR_NOM"
+   echo "Port : $SERVEUR_PORT"
+   echo "Base : $DB_HOTE:$DB_PORT/$DB_NOM"
+   ```
+
+</Steps>
+
+### Exercice 3.5 Comparer prod et dev
+
+Charge la configuration de développement (`serveur-dev.env`) et compare avec la production. Qu'est-ce qui change?
+
+<details>
+<summary>Solution</summary>
+
+```bash
+# D'abord, regarde les différences
+echo "=== Production ==="
+cat config/serveur.env
+
+echo ""
+echo "=== Développement ==="
+cat config/serveur-dev.env
+```
+
+Ou, pour charger la config dev :
+
+```bash
+source config/serveur-dev.env
+echo "Nom  : $SERVEUR_NOM"
+echo "Port : $SERVEUR_PORT"
+echo "Base : $DB_HOTE"
+echo "Cache: $CACHE_ACTIF"
+```
+
+Différences notables : le port change (3000 → 3001), la base de données est locale (`localhost` au lieu de `db-prod`), le cache est désactivé, les sauvegardes sont désactivées, et le niveau de log est `debug` au lieu de `info`.
+
+</details>
+
+### Exercice 3.6 Surcharger une variable
+
+Après avoir chargé `serveur.env`, le port est `3000`. Change-le à `4000` **sans modifier le fichier**, puis vérifie.
+
+<details>
+<summary>Solution</summary>
+
+```bash
+source config/serveur.env
+echo "Avant  : $SERVEUR_PORT"
+
+SERVEUR_PORT=4000
+echo "Après  : $SERVEUR_PORT"
+```
+
+</details>
+
+
+### Exercice 3.7 Condition sur la configuration
+
+Charge la config de production et affiche un message différent selon que le cache est actif ou non.
+
+<details>
+<summary>Solution</summary>
+
+```bash
+source config/serveur.env
+
+if [ "$CACHE_ACTIF" = "oui" ]; then
+    echo "Cache activé (durée : ${CACHE_DUREE}s)"
+else
+    echo "Cache désactivé"
+fi
+```
+
+Essaie ensuite avec la config dev :
+
+```bash
+source config/serveur-dev.env
+
+if [ "$CACHE_ACTIF" = "oui" ]; then
+    echo "Cache activé (durée : ${CACHE_DUREE}s)"
+else
+    echo "Cache désactivé"
+fi
+```
+
+</details>
+
+
+### Exercice 3.8 Tableau de bord du serveur
+
+Combine tout ce que tu as appris pour créer un mini tableau de bord :
+1. Charge la config de production
+2. Affiche le nom du serveur et le port
+3. Compte les requêtes du jour (lignes dans `acces.log`)
+4. Compte les erreurs et les avertissements
+5. Affiche si le cache et les sauvegardes sont actifs
+6. Écris le résumé dans `tableau-de-bord.txt`
+
+<details>
+<summary>Solution</summary>
+
+```bash
+source config/serveur.env
+
+NB_REQUETES=$(cat logs/acces.log | wc -l)
+NB_ERREURS=$(grep -c "ERROR" logs/erreurs.log)
+NB_WARNINGS=$(grep -c "WARNING" logs/erreurs.log)
+NB_SAUVEGARDES=$(find sauvegardes -name "*.sql" | wc -l)
+
+echo "═══════════════════════════════════"
+echo " Tableau de bord — $SERVEUR_NOM"
+echo "═══════════════════════════════════"
+echo " Port        : $SERVEUR_PORT"
+echo " Base        : $DB_HOTE:$DB_PORT"
+echo " Requêtes    : $NB_REQUETES"
+echo " Erreurs     : $NB_ERREURS"
+echo " Avert.      : $NB_WARNINGS"
+echo " Cache       : $CACHE_ACTIF"
+echo " Sauvegardes : $SAUVEGARDE_AUTO ($NB_SAUVEGARDES fichiers)"
+echo "═══════════════════════════════════"
+
+# Écrire dans un fichier
+echo "Tableau de bord — $(date)" > tableau-de-bord.txt
+echo "Serveur    : $SERVEUR_NOM (port $SERVEUR_PORT)" >> tableau-de-bord.txt
+echo "Requêtes   : $NB_REQUETES" >> tableau-de-bord.txt
+echo "Erreurs    : $NB_ERREURS" >> tableau-de-bord.txt
+echo "Avert.     : $NB_WARNINGS" >> tableau-de-bord.txt
+echo "Cache      : $CACHE_ACTIF" >> tableau-de-bord.txt
+echo "Sauvegardes: $SAUVEGARDE_AUTO" >> tableau-de-bord.txt
+```
+
+</details>

@@ -1,0 +1,777 @@
+---
+title: Recherche et filtres
+description: Chercher dans les fichiers avec grep et find, compter et trier avec wc, sort et uniq, rediriger la sortie vers des fichiers, et enchaîner les commandes avec les pipes.
+sidebar:
+  order: 6
+---
+
+import { Aside, Steps, Tabs, TabItem, Card, CardGrid } from '@astrojs/starlight/components';
+
+Linux offre un ensemble de commandes conçues pour **chercher**, **filtrer**, **compter**, **trier** et **enchaîner** des opérations sur du texte. Ces commandes sont les outils quotidiens de quiconque travaille avec un serveur, un terminal ou un pipeline de déploiement.
+
+---
+
+## Commande `grep` : Chercher du texte dans les fichiers
+
+`grep` est l'outil de recherche de texte le plus utilisé en Linux. Son nom vient de *Global Regular Expression Print*.
+Il parcourt un fichier ligne par ligne et **affiche uniquement les lignes qui contiennent le motif recherché**.
+
+### Usage de base
+
+```bash
+grep "motif" fichier
+```
+
+Par exemple, pour trouver toutes les erreurs dans un log :
+
+```bash
+grep "ERROR" /var/log/serveur.log
+# [2026-05-07 10:40:22] ERROR  Timeout de la base de données
+# [2026-05-07 11:05:12] ERROR  Timeout de la base de données
+```
+
+**`grep` n'affiche que les lignes correspondantes**. Tout le reste du fichier est ignoré. 
+
+### Options courantes
+
+| Option | Effet | Exemple |
+|---|---|---|
+| `-n` | Affiche le **numéro de ligne** | `grep -n "ERROR" log.txt` |
+| `-i` | **Insensible** à la casse (majuscules/minuscules) | `grep -i "error" log.txt` |
+| `-c` | **Compte** le nombre de lignes correspondantes | `grep -c "404" acces.log` |
+| `-r` | Cherche **récursivement** dans un dossier | `grep -r "TODO" src/` |
+| `-v` | **Inverse** le filtre (lignes qui ne contiennent PAS le motif) | `grep -v "INFO" erreurs.log` |
+| `--include` | Limite la recherche à certains types de fichiers | `grep -r --include="*.js" "console.log" .` |
+
+
+<Aside type="note" title="grep -v : le filtre inversé">
+L'option `-v` est souvent sous-estimée. Elle est très utile pour **exclure** du bruit. 
+Par exemple, `grep -v "INFO"` retire les lignes informatives d'un log pour ne garder 
+que les avertissements et les erreurs. C'est généralement ce qui t'intéresse quand tu débogues.
+</Aside>
+
+### Chercher récursivement dans un projet
+
+Quand tu travailles sur un projet web, tes fichiers sont répartis dans plusieurs dossiers. L'option `-r` permet à `grep` de parcourir toute l'arborescence :
+
+
+#### Chercher "console.log" dans tous les fichiers JavaScript du projet
+
+```bash
+grep -rn --include="*.js" "console.log" .
+# ./src/app.js:12:  console.log("Serveur démarré");
+# ./src/api/routes.js:45:  console.log("Requête reçue:", req.url);
+```
+
+#### Chercher les FIXME dans tout le projet
+
+```bash
+grep -rn "FIXME" .
+```
+
+{/* <Aside type="tip" title="Pertinence web">
+`grep -rn "console.log" --include="*.js" .` est un réflexe courant avant un déploiement en production. Les `console.log` oubliés dans le code alourdissent l'application et peuvent exposer des informations sensibles. Certains pipelines CI/CD bloquent le déploiement si cette commande retourne des résultats.
+</Aside> */}
+
+<Aside type="note" title="Équivalent Windows">
+PowerShell offre `Select-String` qui joue le même rôle : `Select-String -Path *.js -Pattern "TODO"`. Le principe est identique : filtrer des lignes de texte par motif.
+</Aside>
+
+---
+
+## Commande `find` : Chercher des fichiers
+
+`grep` cherche *du texte dans* les fichiers. **`find` cherche les fichiers eux-mêmes** en utilisant un **critère**: nom, type, taille ou date.
+
+### Usage de base
+
+```bash
+find chemin -critère valeur
+```
+
+#### Trouver tous les fichiers CSS dans le projet
+```bash
+find . -name "*.css"
+```
+
+##### Résultat de l'exécution (possible)
+
+```text
+./css/style.css
+./css/navigation.css
+```
+
+#### Trouver tous les fichiers JavaScript
+```bash
+find . -name "*.js"
+# ./js/app.js
+# ./js/validation.js
+```
+
+##### Résultat de l'exécution (possible)
+
+```text
+./js/app.js
+./js/validation.js
+```
+
+<Aside type="note" title="Pourquoi le `.` au début?">
+Le `.` au début signifie « à partir du dossier courant ». Tu peux remplacer par n'importe quel chemin : `find /var/log -name "*.log"`.
+</Aside>
+
+### Critères courants
+
+| Critère | Effet | Exemple |
+|---|---|---|
+| `-name "motif"` | Cherche par **nom** (sensible à la casse) | `find . -name "*.html"` |
+| `-iname "motif"` | Cherche par nom, **insensible** à la casse | `find . -iname "readme*"` |
+| `-type f` | Seulement les **fichiers** | `find . -type f` |
+| `-type d` | Seulement les **dossiers** | `find . -type d` |
+| `-maxdepth N` | Limite la **profondeur** de recherche | `find . -maxdepth 1 -name "*.html"` |
+
+
+#### Lister tous les dossiers du projet
+```bash
+find . -type d
+```
+
+##### Résultat de l'exécution (possible)
+```text
+.
+./css
+./js
+./img
+./pages
+```
+
+
+#### Trouver les fichiers HTML seulement à la racine (pas dans les sous-dossiers)
+```bash
+find . -maxdepth 1 -name "*.html"
+```
+##### Résultat de l'exécution (possible)
+```text
+./index.html
+```
+
+#### Trouver les fichiers de configuration (.env, .conf, .cfg)
+```bash
+find /etc -name "*.conf" -type f
+```
+
+### Exécuter une commande sur les résultats
+
+`find` peut appeler une commande sur chaque fichier trouvé avec l'option `-exec` :
+
+#### Compter les lignes de chaque fichier CSS
+
+```bash
+find . -name "*.css" -exec wc -l {} +
+```
+
+##### Résultat de l'exécution (possible)
+
+```text
+26 ./css/navigation.css
+63 ./css/style.css
+126 total
+```
+
+#### Afficher les permissions de chaque script
+
+```bash
+find . -name "*.sh" -exec ls -l {} +
+```
+
+La syntaxe est particulière : 
+
+- `{}` est remplacé par le nom du fichier trouvé
+- `+` (ou `\;`) termine la commande.
+
+<Aside type="caution" title="Syntaxe de -exec">
+`find . -name "*.css" -exec wc -l {} +` — les espaces autour de `{}` et le `+` final sont obligatoires. C'est une des syntaxes les moins intuitives de bash, mais elle est extrêmement puissante.
+</Aside>
+
+{/* <Aside type="tip" title="Pertinence web">
+`find . -name "node_modules" -type d` est une commande classique pour localiser les dossiers `node_modules` sur un serveur. Combiné avec `-exec rm -rf {} +`, c'est un moyen courant de libérer de l'espace disque.
+</Aside> */}
+
+---
+
+## Commande `wc` : Compter les lignes, les mots et les caractères
+
+`wc` (*word count*) est un outil de comptage simple mais essentiel. Il compte les **lignes**, les **mots** et les **caractères** d'un fichier ou d'une entrée.
+
+```bash
+wc fichier.txt
+#   42  186  1205 fichier.txt
+# lignes mots caractères
+```
+
+### Options
+
+| Option | Compte | Exemple |
+|---|---|---|
+| `-l` | **Lignes** seulement | `wc -l acces.log` |
+| `-w` | **Mots** seulement | `wc -w article.txt` |
+| `-c` | **Caractères** (octets) seulement | `wc -c style.css` |
+
+#### Combien de requêtes dans le log d'accès? (1 ligne = 1 requête)
+
+```bash
+wc -l acces.log
+```
+
+##### Résultat de l'exécution (possible)
+
+```text
+26 acces.log
+```
+
+#### Combien de lignes dans tous les fichiers CSS?
+```bash
+wc -l css/*.css
+```
+
+```text
+26 css/navigation.css
+63 css/style.css
+37 css/typo.css
+126 total
+```
+
+#### Stocker le résultat dans une variable
+```bash
+NB_LIGNES=$(cat acces.log | wc -l)
+echo "Nombre de requêtes : $NB_LIGNES"
+```
+
+<Aside type="note" title="wc -l avec plusieurs fichiers">
+Quand tu passes plusieurs fichiers à `wc -l`, il affiche le compte pour chaque fichier **et** un total à la fin. C'est un moyen rapide de comparer la taille de plusieurs fichiers.
+</Aside>
+
+---
+
+## Trier les lignes avec `sort`
+
+`sort` prend un fichier (ou une entrée) et trie ses lignes **par ordre alphabétique** par défaut.
+
+#### Fichier non trié
+```bash
+cat fruits.txt
+```
+
+##### Résultat de l'exécution (possible)
+
+```
+banane
+cerise
+abricot
+datte
+```
+
+```bash
+sort fruits.txt
+```
+
+##### Résultat de l'exécution (possible)
+
+```text
+abricot
+banane
+cerise
+datte
+```
+
+### Options courantes
+
+| Option | Effet | Exemple |
+|---|---|---|
+| `-r` | Tri **inversé** (Z → A) | `sort -r fichier.txt` |
+| `-n` | Tri **numérique** (1, 2, 10 au lieu de 1, 10, 2) | `sort -n nombres.txt` |
+| `-u` | Retire les **doublons** en triant | `sort -u fichier.txt` |
+| `-k N` | Trie selon la **N-ième colonne** | `sort -k 2 fichier.txt` |
+
+#### Trier un log d'accès par code de réponse HTTP (8e colonne)
+
+```bash
+sort -k 8 acces.log
+```
+
+#### Trier des tailles de fichiers par ordre numérique décroissant
+```bash
+du -sh * | sort -rn
+```
+
+##### Résultat de l'exécution (possible)
+
+```text
+12M  node_modules/
+ 2M  images/
+45K  index.html
+ 8K  style.css
+```
+
+<Aside type="note" title="sort -n vs sort">
+Sans `-n`, `sort` trie comme un dictionnaire : `1, 10, 100, 2, 20, 3`. Avec `-n`, il trie comme des nombres : `1, 2, 3, 10, 20, 100`. Pour des tailles, des compteurs ou des PID, utilise toujours `-n`.
+</Aside>
+
+---
+
+## Commande `uniq` : Éliminer les doublons
+
+`uniq` supprime les lignes **consécutives identiques**. Il est presque toujours utilisé après `sort`, car les doublons doivent être adjacents pour être détectés.
+
+#### Sans sort, uniq ne voit que les doublons adjacents
+
+```bash
+cat visites.txt
+```
+
+##### Résultat de l'exécution (possible)
+
+```
+/index.html
+/produits
+/index.html     ← pas adjacent au premier, uniq ne le verra pas
+/contact
+```
+
+#### Avec sort + uniq : doublons éliminés
+
+```bash
+sort visites.txt | uniq
+```
+
+```text
+/contact
+/index.html
+/produits
+```
+
+### Options utiles
+
+| Option | Effet | Exemple |
+|---|---|---|
+| `-c` | **Compte** les occurrences de chaque ligne | `sort fichier \| uniq -c` |
+| `-d` | Affiche **seulement les doublons** | `sort fichier \| uniq -d` |
+
+#### Quelles pages sont les plus visitées? Extraire les URLs, trier, compter
+```bash
+cat acces.log | awk '{print $6}' | sort | uniq -c | sort -rn
+```
+
+##### Résultat de l'exécution (possible)
+```
+#    5 /api/produits
+#    3 /index.html
+#    2 /api/commande
+#    1 /contact
+#    1 /apropos
+```
+
+- `awk '{print $6}'` extrait la 6e colonne de chaque ligne (ici, l'URL).
+- Tu n'as pas besoin de maîtriser `awk`. Retiens juste que `awk '{print $N}'` extrait la N-ième colonne d'un texte.
+
+Cet enchaînement est un classique de l'analyse de logs. On y reviendra dans la section sur les pipes.
+
+
+---
+
+## Redirections : Sauvegarder la sortie
+
+Par défaut, chaque commande affiche son résultat **à l'écran** (la sortie standard, appelée *stdout*). 
+Les redirections permettent d'envoyer ce résultat ailleurs — typiquement dans un fichier.
+
+### Les trois flux
+
+Chaque commande Linux a trois **flux** de données :
+
+| Flux | Numéro | Nom | Rôle |
+|---|---|---|---|
+| **stdin** | 0 | Entrée standard | Ce que la commande **lit** (par défaut : le clavier) |
+| **stdout** | 1 | Sortie standard | Ce que la commande **affiche** (par défaut : l'écran) |
+| **stderr** | 2 | Sortie d'erreur | Les **messages d'erreur** (par défaut : l'écran aussi) |
+
+La sortie normale et les erreurs sont deux flux séparés, même si les deux s'affichent à l'écran. Les redirections te permettent de les diriger indépendamment.
+
+### Rediriger la sortie vers un fichier
+
+#### `>` écrit dans un fichier (ÉCRASE le contenu s'il existe)
+```bash
+echo "Bonjour" > message.txt
+cat message.txt
+# Bonjour
+```
+
+#### `>>` AJOUTE à la fin du fichier (sans écraser)
+
+```bash
+echo "Au revoir" >> message.txt
+cat message.txt
+# Bonjour
+# Au revoir
+```
+
+<Aside type="caution" title="> vs >>">
+C'est le piège le plus courant avec les redirections. 
+- `>` **écrase tout** le contenu du fichier. 
+- `>>` **ajoute** à la fin. 
+</Aside>
+
+### Exemples concrets
+
+```bash
+# Sauvegarder les erreurs d'un log dans un fichier séparé
+grep "ERROR" /var/log/serveur.log > erreurs-du-jour.txt
+
+# Construire un rapport ligne par ligne
+echo "Rapport du $(date +%Y-%m-%d)" > rapport.txt
+echo "=============================" >> rapport.txt
+echo "" >> rapport.txt
+echo "Erreurs trouvées :" >> rapport.txt
+grep "ERROR" serveur.log >> rapport.txt
+echo "" >> rapport.txt
+echo "Nombre total : $(grep -c "ERROR" serveur.log)" >> rapport.txt
+```
+
+{/* ### Rediriger les erreurs
+
+Les messages d'erreur utilisent le flux **stderr** (numéro 2). Pour les rediriger, on utilise `2>` :
+
+```bash
+# Les erreurs s'affichent normalement à l'écran
+find /etc -name "*.conf"
+# /etc/nginx/nginx.conf
+# find: '/etc/ssl/private': Permission denied    ← stderr (erreur)
+# /etc/ssh/sshd_config
+
+# Rediriger les erreurs dans un fichier
+find /etc -name "*.conf" 2> erreurs.txt
+# /etc/nginx/nginx.conf                          ← stdout (à l'écran)
+# /etc/ssh/sshd_config
+# Les erreurs sont dans erreurs.txt
+
+# Ignorer les erreurs complètement
+find /etc -name "*.conf" 2> /dev/null
+# /etc/nginx/nginx.conf                          ← seulement les résultats
+# /etc/ssh/sshd_config
+```
+
+<Aside type="note" title="/dev/null">
+`/dev/null` est un fichier spécial qui agit comme un trou noir — tout ce qu'on y envoie disparaît. `2> /dev/null` est un idiome courant qui signifie « ignore les erreurs ». Tu le verras souvent dans les scripts.
+</Aside> */}
+
+{/*
+### Rediriger stdout ET stderr
+
+```bash
+# Tout dans le même fichier (sortie + erreurs)
+commande > tout.log 2>&1
+
+# Version raccourcie (bash moderne)
+commande &> tout.log
+```
+
+La syntaxe `2>&1` signifie « envoie le flux 2 (stderr) au même endroit que le flux 1 (stdout) ». C'est une syntaxe fréquente dans les scripts et les pipelines CI/CD.
+
+<Aside type="note" title="Équivalent Windows">
+PowerShell utilise `>` et `>>` comme bash. Pour les erreurs, la syntaxe diffère : `commande 2> erreurs.txt` fonctionne aussi en PowerShell, mais la redirection combinée s'écrit `*> tout.log` au lieu de `&>`.
+</Aside> */}
+
+---
+
+## Pipes : Enchaîner les commandes
+
+Le **pipe** (`|`) est l'outil le plus puissant du terminal. 
+Il prend la **sortie** d'une commande et l'envoie comme **entrée** à la commande suivante — 
+comme un tuyau qui connecte deux machines.
+
+```
+commande1 | commande2 | commande3
+```
+
+La sortie de `commande1` devient l'entrée de `commande2`, dont la sortie devient l'entrée de `commande3`. Chaque commande agit comme un **filtre** qui transforme les données en transit.
+
+### Premiers exemples
+
+#### Compter le nombre de fichiers dans un dossier
+```bash
+ls | wc -l
+```
+
+#### Chercher un processus par nom
+
+```bash
+ps aux | grep "node"
+```
+
+#### Afficher les 5 dernières lignes d'un log
+
+```bash
+cat serveur.log | tail -5
+```
+
+### Comment ça fonctionne
+
+Prenons `grep "ERROR" serveur.log | wc -l` :
+
+1. `grep "ERROR" serveur.log` lit le fichier et affiche les lignes contenant `ERROR`
+2. Le pipe `|` intercepte cette sortie (au lieu de l'afficher à l'écran)
+3. `wc -l` reçoit ces lignes et compte combien il y en a
+4. Le résultat final (un nombre) s'affiche à l'écran
+
+Chaque commande ne connaît que son entrée et sa sortie — elle ne sait pas ce qu'il y a avant ou après dans la chaîne.
+
+<Aside type="note" title="Analogie">
+Imagine une chaîne de montage dans une usine. Chaque poste de travail reçoit une pièce, 
+la transforme, et la passe au poste suivant. 
+Aucun poste ne connaît le produit final — il fait juste son opération. 
+
+Le pipe fonctionne exactement comme ça : chaque commande reçoit du texte, le transforme, et le passe à la suivante.
+</Aside>
+
+### Exemples progressifs
+
+Assumons un fichier access.log avec le contenu suivant:
+
+```text
+127.0.0.1 - - [13/May/2026] "GET /index.html HTTP/1.1" 200 532
+127.0.0.2 - - [13/May/2026] "GET /about.html HTTP/1.1" 404 210
+127.0.0.3 - - [13/May/2026] "GET /products HTTP/1.1" 200 888
+127.0.0.4 - - [13/May/2026] "GET /products/43 HTTP/1.1" 404 220
+127.0.0.5 - - [13/May/2026] "POST /login HTTP/1.1" 200 1200
+127.0.0.6 - - [13/May/2026] "GET /index.html HTTP/1.1" 200 532
+127.0.0.7 - - [13/May/2026] "GET /products HTTP/1.1" 500 100
+127.0.0.8 - - [13/May/2026] "GET /index.html HTTP/1.1" 200 532
+127.0.0.9 - - [13/May/2026] "GET /contact HTTP/1.1" 200 300
+127.0.0.10 - - [13/May/2026] "POST /contact HTTP/1.1" 500 100
+127.0.0.11 - - [13/May/2026] "POST /login HTTP/1.1" 200 1200
+127.0.0.12 - - [13/May/2026] "GET /products HTTP/1.1" 200 888
+127.0.0.13 - - [13/May/2026] "GET /acceuil.html HTTP/1.1" 404 220
+127.0.0.14 - - [13/May/2026] "POST /login HTTP/1.1" 400 220
+127.0.0.15 - - [13/May/2026] "POST /signup HTTP/1.1" 201 100
+```
+
+#### Niveau 1 : deux commandes
+
+#### Combien de fichiers JavaScript dans le projet?
+```bash
+find . -name "*.js" | wc -l
+# 3
+```
+
+#### Chercher les erreurs 404, afficher seulement le nombre
+
+```bash
+grep "404" acces.log | wc -l
+# 4
+```
+
+#### Niveau 2 : trois commandes
+
+##### Les 3 pages les plus visitées
+```bash
+grep "200" acces.log | awk '{print $6}' | sort | uniq -c | sort -rn | head -3
+```
+
+<Steps>
+1. `grep "200" acces.log`: Trouver toutes les lignes contenant 200
+    ```
+    127.0.0.1 - - [13/May/2026] "GET /index.html HTTP/1.1" 200 532
+    127.0.0.3 - - [13/May/2026] "GET /products HTTP/1.1" 200 888
+    127.0.0.4 - - [13/May/2026] "POST /login HTTP/1.1" 200 1200
+    127.0.0.5 - - [13/May/2026] "GET /index.html HTTP/1.1" 200 532
+    127.0.0.7 - - [13/May/2026] "GET /index.html HTTP/1.1" 200 532
+    127.0.0.8 - - [13/May/2026] "GET /contact HTTP/1.1" 200 300
+    127.0.0.9 - - [13/May/2026] "POST /login HTTP/1.1" 200 1200
+    127.0.0.10 - - [13/May/2026] "GET /products HTTP/1.1" 200 888
+    ```
+2. `awk '{print $6}'`: Conserver le 6e champ de chaque ligne
+    | 1         | 2   | 3   | 4   | 5   | 6   | 7...   | 
+    | --------- |:---:| :---: | :---: | :---: | :---: | :---: | 
+    | `127.0.0.1` | `-` | `-` | `[13/May/2026]` | `"GET` | `/index.html` | ... |
+    | `127.0.0.3` | `-` | `-` | `[13/May/2026]` | `"GET` | `/products` | ... |
+    | `127.0.0.4` | `-` | `-` | `[13/May/2026]` | `"POST` | `/login` | ... |
+    
+    ```
+    /index.html
+    /products
+    /login
+    /index.html
+    /index.html
+    /contact
+    /login
+    /products
+    ```
+3. `sort`: Trier par ordre alphabétique (important pour le décompte avec `uniq`)
+    ```
+    /contact
+    /index.html
+    /index.html
+    /index.html
+    /login
+    /login
+    /products
+    /products
+    ```
+4. `uniq -c`: Compter les doublons (**consécutifs**)
+    ```
+    1 /contact
+    3 /index.html
+    2 /login
+    2 /products
+    ```
+5. `sort -rn`: Trier par ordre numérique décroissant (reverse)
+    ```
+    3 /index.html
+    2 /products
+    2 /login
+    1 /contact
+    ```
+6. `head -3`: Conserver les trois premières lignes
+    ```
+    3 /index.html
+    2 /products
+    2 /login
+    ```
+</Steps>
+
+##### Les adresses IP qui génèrent des erreurs 403
+
+```bash
+grep "403" acces.log | awk '{print $1}' | sort -u
+# 172.16.0.3
+```
+
+#### Niveau 3 : résoudre un vrai problème 
+
+##### "Quelles adresses IP ont provoqué des erreurs 500 aujourd'hui?"
+
+```bash
+grep "500" acces.log | awk '{print $1}' | sort | uniq -c | sort -rn
+#    2 10.0.0.5
+```
+
+{/* ### Pipe vs redirection
+
+Le pipe et la redirection font des choses différentes :
+
+| Mécanisme | Ce qu'il fait | Exemple |
+|---|---|---|
+| Pipe `\|` | Envoie la sortie vers **une commande** | `grep "ERROR" log \| wc -l` |
+| Redirection `>` | Envoie la sortie vers **un fichier** | `grep "ERROR" log > erreurs.txt` |
+
+On peut combiner les deux :
+
+```bash
+# Filtrer, compter, et sauvegarder le résultat
+grep "ERROR" serveur.log | wc -l > nb-erreurs.txt
+
+# Filtrer, trier, et sauvegarder
+grep "404" acces.log | sort > pages-introuvables.txt
+```
+
+<Aside type="tip" title="Pertinence web">
+Les pipelines CI/CD (GitHub Actions, GitLab CI) utilisent massivement les pipes et les redirections. Une étape typique : `npm test 2>&1 | tee resultats.log` — lance les tests, affiche les résultats à l'écran ET les sauvegarde dans un fichier. La commande `tee` fait exactement ça : elle duplique la sortie vers l'écran et un fichier.
+</Aside> */}
+
+---
+
+{/* ## Combiner les outils
+
+La puissance de ces commandes vient de leur **combinaison**. Chaque outil fait une seule chose, mais ensemble ils résolvent des problèmes complexes.
+
+### Scénario : analyser les logs d'un serveur web
+
+Tu dois produire un résumé de l'activité du jour à partir du log d'accès.
+
+```bash
+# 1. Combien de requêtes au total?
+wc -l acces.log
+# 26
+
+# 2. Combien de requêtes réussies (code 200)?
+grep -c "200" acces.log
+# 14
+
+# 3. Combien de requêtes par code de réponse?
+awk '{print $8}' acces.log | sort | uniq -c | sort -rn
+#   14 200
+#    4 404
+#    4 403
+#    2 500
+#    2 201
+
+# 4. Quelles pages génèrent des 404?
+grep "404" acces.log | awk '{print $6}' | sort -u
+# /ancien-lien
+# /api/produits/99
+# /favicon.ico
+# /page-inexistante
+
+# 5. Qui tente d'accéder à l'admin?
+grep "/admin" acces.log | awk '{print $1}' | sort -u
+# 172.16.0.3
+
+# 6. Écrire tout ça dans un rapport
+echo "=== Rapport du jour ===" > rapport.txt
+echo "Requêtes totales : $(wc -l < acces.log)" >> rapport.txt
+echo "Requêtes réussies : $(grep -c '200' acces.log)" >> rapport.txt
+echo "Erreurs 404 : $(grep -c '404' acces.log)" >> rapport.txt
+echo "Erreurs 500 : $(grep -c '500' acces.log)" >> rapport.txt
+echo "" >> rapport.txt
+echo "Pages introuvables :" >> rapport.txt
+grep "404" acces.log | awk '{print $6}' | sort -u >> rapport.txt
+```
+
+### Scénario : faire le ménage dans un projet
+
+```bash
+# Trouver les fichiers les plus gros du projet
+find . -type f -exec du -h {} + | sort -rh | head -10
+
+# Compter les lignes de code par langage
+echo "HTML : $(find . -name '*.html' -exec cat {} + 2>/dev/null | wc -l) lignes"
+echo "CSS  : $(find . -name '*.css' -exec cat {} + 2>/dev/null | wc -l) lignes"
+echo "JS   : $(find . -name '*.js' -exec cat {} + 2>/dev/null | wc -l) lignes"
+
+# Lister les TODO restants avec leur fichier et numéro de ligne
+grep -rn "TODO" --include="*.html" --include="*.css" --include="*.js" .
+``` */}
+
+
+---
+
+## Synthèse
+
+<CardGrid>
+  <Card title="Chercher" icon="magnifier">
+    `grep` cherche du texte dans les fichiers. 
+    `find` cherche les fichiers eux-mêmes.  
+    L'option `-r` de `grep` et `-exec` de `find` étendent leur portée à tout un projet (dossier).
+  </Card>
+  <Card title="Compter et trier" icon="list-format">
+    `wc -l` compte les lignes. `sort` trie. `uniq -c` compte les occurrences.  
+    Ensemble, `sort | uniq -c | sort -rn` produit un classement par fréquence.
+  </Card>
+  <Card title="Rediriger" icon="right-arrow">
+    `>` écrit dans un fichier (écrase). 
+    `>>` ajoute à la fin.  
+    `2>` redirige les erreurs. 
+    `2> /dev/null` les ignore. 
+    {/* Trois flux : stdin (0), stdout (1), stderr (2). */}
+  </Card>
+  <Card title="Enchaîner" icon="puzzle">
+    Le pipe `|` connecte la sortie d'une commande à l'entrée de la suivante.  
+    Chaque commande est un filtre dans une chaîne de traitement.
+  </Card>
+</CardGrid>
+
+{/* <Aside type="note" title="La philosophie Unix">
+Chaque commande fait **une seule chose bien**. 
+- `grep` cherche. `sort` trie. `wc` compte. `uniq` déduplique. Seules, elles sont limitées. 
+- Connectées par des pipes, elles résolvent des problèmes que leurs créateurs n'avaient pas prévus. 
+
+C'est le principe fondamental de la conception Unix, mais également dans la conception d'applications web moderne (ex: composants React, middlewares Express).
+</Aside> */}

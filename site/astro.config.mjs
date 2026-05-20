@@ -33,6 +33,7 @@ export default defineConfig({
 						{ label: 'Utilisateurs et permissions', slug: 'cours/06-utilisateurs-permissions' },
 						{ label: "Variables d'environnement", slug: 'cours/07-variables-env' },
 						{ label: "Programmes & processus", slug: 'cours/08-processus' },
+						{ label: "Recherche, filtres et redirections", slug: 'cours/09-filtres' },
 					]
 				},
 				{
@@ -43,7 +44,8 @@ export default defineConfig({
 						{ label: 'Modélisation ascenseur', slug: 'activites/03-modelisation-ascenseur' },
 						{ label: 'Installation Linux', slug: 'activites/04-installation-linux' },
 						{ label: 'Permissions à la FAAQ', slug: 'activites/05-faaq' },
-						{ label: 'Automatiser la FAAQ avec un script bash', slug: 'activites/06-faaq-bash' }
+						{ label: 'Automatiser la FAAQ avec un script bash', slug: 'activites/06-faaq-bash' },
+						{ label: 'Recherche et variables env', slug: 'activites/07-recherche-bash' }
 					],
 				},
 				{
